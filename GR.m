@@ -3,7 +3,7 @@
 (* Author: Benjamin Suzzoni
 Organization: University of Southampton *)
 
-(* This package contains definitions for various curvature invariants of General Relativity *)
+(* This package contains definitions for various curvature invariants of General Relativity and custom implementations of exterior calculus *)
 BeginPackage["GRBenterre`"]
 
 Christoffel::usage = "Calculates the Christoffel symbols for the associated metric g and coordinates xx.
@@ -151,46 +151,301 @@ The Lovelock invariants were taking from Fulling, S. A., et al. 'Normal forms fo
 
 Type ?GRlist for a list of functions or ?'Function' for a function's description."
 
-ExteriorAlgebra::usage = "Based on the EDC360 package"
+ExteriorAlgebra::usage = "Based on the EDC360 package. The exterior algebra part of this package defines the exterior derivative as d[]. The Wedge product can be used between forms d[x]\[Wedge]d[y].
+
+The full list of functions:
+Form2Metric
+Metric
+HodgeStar
+SelfDualQ
+AntiSelfDualQ
+Form2Tensor
+Tensor2Form
+Lie
+d
+KillingQ
+InteriorProduct"
 
 Form2Metric::usage = "Form2Metric[g,xx] Converts a metric (abusively) written using squared one-forms,
 eg. g=d[r]^2+r^2d[\[Theta]]^2 and xx={r,\[Theta]},
 into its matrix representation."
+Form2Metric::missingInput = "Cannot locate a globally defined array of coordinates, xx. Either provide one as an input or define it globally."
 
-HodgeStar::usage = "HodgeStar[tensor, metric]: returns the Hodge dual of the tensor, with respect to the {d,d} matrix array.
+Metric::usage = "Metric[str,dim] Returns a metric, in tensor form, with shape dim x dim.
+
+str='Sphere' or 'S' gives the standard metric on the unit sphere
+str='Fubini-Study' or 'FS' gives the Fubini-Study metric on \!\(\*SuperscriptBox[\(CP\),\(dim\)]\)"
+
+HodgeStar::usage = "HodgeStar[tensor, metric]: returns the Hodge dual of the tensor, with respect to the metric.
 HodgeStar[form, metric, xx]: converts the form to its tensor representation then calls HodgeStar[tensor, metric]
+
+If metric isn't specified, HodgeStar will try to use a globally defined variable called 'g' as the metric
 
 Optional Arguments:
  - Assumptions->List. Used in all Simplify[] calls."
 (*Star::usage = "Star[form, g, xx] is a custom operator for HodgeStar.";*)
-HodgeStar::missingInput = "Missing required coordinates array xx when converting to form to tensor.
+HodgeStar::missingInput = "Missing required coordinates array xx or metric g when converting from form to tensor.
 Common usage HodgeStar[form, g, xx]."
 
 SelfDualQ::usage = "SelfDualQ[form, metric, coords]: return true if form is self-dual wrt the metric and false otherwise.
-Accepts rank-r tensor and r-form representation for the input form. The fromer doesn't require coords to be specified."
-AntiSelfDualQ::usage = "AntiSelfDualQ[form, metric, coords]: return true if form is anti-self-dual wrt the metric and false otherwise.
-Accepts rank-r tensor and r-form representation for the input form. The fromer doesn't require coords to be specified."
+Accepts rank-r tensor and r-form representation for the input form. The former doesn't require coords to be specified.
 
-Form2Tensor::usage = "Form2Tensor[form, xx]: Converts a d-form, represented using d[x]\[Wedge]d[y]... into its tensor components. xx is a list of coordinates.
+SelfDualQ[form] will try to use globally defined variables called 'xx' as the set of coordinates and 'g' as the metric and then call SelfDualQ[form, g, xx].
 
 Optional Arguments:
- - \"Type\"->String. When equal to 'SymmetrizedArray' returns the tensor as a fully anti-symmetric SymmetrizedArray. When set to 'Normal' returns a standard array. (defaults to 'Normal')"
+  - Assumptions->None: Array of assumptions used in Simplify"
+SelfDualQ::missingInput = "Cannot locate a globally defined array of coordinates, xx and/or metric g. Either provide them as an input or define them globally."
+
+AntiSelfDualQ::usage = "AntiSelfDualQ[form, g, xx]: return true if form is anti-self-dual wrt the metric 'g' and false otherwise.
+Accepts rank-r tensor and r-form representation for the input form. The former doesn't require coords to be specified.
+
+AntiSelfDualQ[form] will try to use globally defined variables called 'xx' as the set of coordinates and 'g' as the metric and then call AntiSelfDualQ[form, g, xx].
+
+Optional Arguments:
+  - Assumptions->None: Array of assumptions used in Simplify"
+AntiSelfDualQ::missingInput = "Cannot locate a globally defined array of coordinates, xx and/or metric g. Either provide them as an input or define them globally."
+
+Form2Tensor::usage = "Form2Tensor[form, xx]: Converts a d-form, represented using d[x]\[Wedge]d[y]... into its tensor components. 'xx' is a list of coordinates.
+Form2Tensor[form] will try to use a globally defined variable called 'xx' as the set of coordinates and then call Form2Tensor[form, xx].
+
+Optional Arguments:
+  - Assumptions->None: Array of assumptions used in Simplify
+  - \"Type\"->String. When equal to 'SymmetrizedArray' returns the tensor as a fully anti-symmetric SymmetrizedArray. When set to 'Normal' returns a standard array. (defaults to 'Normal')"
+Form2Tensor::missingInput = "Cannot locate a globally defined array of coordinates, xx. Either provide it as an input or define one globally."
 
 Tensor2Form::usage = "Tensor2Form[tensor, xx]: Converts a tensor of any dimension into its form representation, using the d[] function. xx is a list of coordinates.
+Tensor2Form[tensor] will try to use a globally defined variable called 'xx' as the set of coordinates and then call Tensor2Form[tensor, xx].
+If the original tensor has a symmetric part, it is automatically set to zero.
 
-If the original tensor has a symmetric part, it is automatically set to zero."
+Optional Arguments:
+  - Assumptions->None: Array of assumptions used in Simplify"
 Tensor2Form::inputForm = "The input variable cannot be a differential form. Please provide a suitable tensor object, as an Array."
+Tensor2Form::missingInput = "Cannot locate a globally defined array of coordinates, xx. Either provide it as an input or define one globally."
 
 (* ScalarEDCode functions *)
 d::usage = "d[form] applies the exterior derivative to the differential form 'form'.";
 Wedge::usage = "Wedge[a, b] returns the wedge product of two differential forms 'a' and 'b'.";
 
-Lie::usage = ""
+Lie::usage = "Lie[vec, tensor, xx] Returns the Lie derivative of 'tensor' wrt to the vector 'vec' using the set of coordinates 'xx'.
+A unit vector in the coordinates can be used as vector input by specifying an integer (in the range 1 to Length[xx]) instead of 'vec'.
+A form of degree r can be used in lieu of 'tensor', after which it is converted to a tensor of rank r.
+
+Lie[vec, tensor] will try to use a globally defined variable called 'xx' as the set of coordinates and then call Lie[vec, tensor, xx].
+
+Optional Arguments:
+  - Assumptions->None: Array of assumptions used in Simplify
+  - \"Up\"->None: Array containing the set of indices in 'tensor' which are contravariant (or up)
+  - \"Down\"->Range[rank]: Array containing the set of indices in 'tensor' which are covariant (or down)
+  - Type->\"Other\": Used to specify the output format. Type->\"Form\" will output the tensor as a rank-r form (defaults to that when using a form as input)
+"
 Lie::vectorDim = "Dimensions of vector don't match that of the coordinates. Please provide a correct vector."
+Lie::missingInput = "Cannot locate a globally defined array of coordinates, xx. Either provide it as an input or define one globally."
+
+KillingQ::usage = "KillingQ[vector, g, xx]: returns true if the vector is Killing wrt the metric 'g' given the set of coordinates 'xx'.
+KillingQ[vector, g] will try to use a globally defined variable called 'xx' as the set of coordinates and then call KillingQ[vector, g, xx].
+KillingQ[vector] will try to use a globally defined variable called 'g' as the metric and then call KillingQ[vector, g].
+
+Optional Arguments:
+  - Assumptions->None: Array of assumptions used in Simplify"
+KillingQ::missingInput = "Cannot locate a globally defined metric g. Either provide it as an input or define one globally."
+
+InteriorProduct::usage = "InteriorProduct[vec, form, xx] returns the interior product of the form with respect to the vector 'vec' given the set of coordinates 'xx'.
+InteriorProduct[vec, tensor, xx] returns the interior product of the tensor with respect to the vector 'vec' given the set of coordinates 'xx'.
+
+Optional Arguments:
+  - Assumptions->None: Array of assumptions used in Simplify
+  - Type->\"Other\": Used to specify the ouput format. Type->\"Form\" will output a rank r-1 form (defaults to that when using rank-r form as input)"
+InteriorProduct::dimMismatch = "Mismatch between the length of the input vector and the length of the coordinates."
 
 (*Needs["Notation`"];*)
 
 Begin["`Private`"]
+
+(* ---------- ScalarEDCode ---------- *)
+Off[General::"spell", General::"spell1", Remove::"rmnsm", 
+  UpSet::"write"];
+
+Unprotect["Global`*"]; ClearAll["Global`*"]; Remove["Global`*"]; \
+Unprotect[In, Out]; Clear[In, Out]; Protect[In, Out]; $Line = 0; \
+$RecursionLimit = 256; $IterationLimit = 4096;
+
+Forms[i_] := {}; AllScalForms = {}; AllDifForms = {}; AllSymbols = \
+{}; FormVars = {_Wedge, _d}; HeadList = {}; ScalHeadList = {}; \
+nodHeads = {Bar, Pattern, Condition, RuleDelayed, 
+  SeriesData}; $EDCversion = 360;
+
+zeroQ[0] = True; zeroQ[x_List] := And @@ (zeroQ /@ Union[Flatten[x]]);
+ zeroQ[x_SeriesData] := If[x[[3]] === {}, True, False]; 
+zeroQ[x_] := False;
+
+SetAttributes[Bar, {Listable}]; Bar[Bar[x_]] = x; 
+Bar[Complex[u_, v_]] := Complex[u, -v]; 
+Bar[x_Plus | x_Times | x_Wedge | x_Power | x_Rule | x_Equal] := 
+ Bar /@ x; 
+Bar[x_SeriesData] := 
+ x /. {First[x] -> Bar[First[x]], x[[2]] -> Bar[x[[2]]], 
+   x[[3]] -> Bar /@ x[[3]]}; 
+Bar[DirectedInfinity[x_]] := DirectedInfinity[Bar[x]]; 
+Bar[d[x_]] := d[Bar[x]]; 
+Bar[Derivative[x__][y_][z__]] := 
+ If[Union[Bar[{z}]] === Union[{z}], 
+  Derivative[
+     Sequence @@ 
+      Permutations[{x}][[
+       Position[Permutations[{z}], Bar[{z}]][[1, 1]]]]][Bar[y]][z], 
+  Derivative[x][Bar[y]][Sequence @@ Bar[{z}]]]; 
+Bar[x_] := x /; NumericQ[x];
+
+FormDegree[x_Plus] := FormDegree[First[x]]; 
+FormDegree[x_Times] := Plus @@ FormDegree /@ List @@ x;
+FormDegree[x_Wedge] := Plus @@ FormDegree /@ List @@ x;
+FormDegree[d[x_]] := FormDegree[d[x]] = 1 + FormDegree[x];
+FormDegree[x_List] := 
+  FormDegree[First[Select[Union[Flatten[x]], ! zeroQ[#] &]]];
+FormDegree[Bar[x_]] := FormDegree[Bar[x]] = FormDegree[x]; 
+FormDegree[x_SeriesData] := If[x[[3]] === {}, 0, FormDegree[x[[3]]]];
+FormDegree[x_] := 0;
+
+DeclareForms[z__] := 
+  Block[{h, x = {{z}}, xi, rxi, k, oldHeads, newHeads}, 
+   While[Head[x[[1, 1]]] === List, x = First[x]]; 
+   Do[xi = x[[i]]; rxi = Rest[xi]; 
+    Forms[First[xi]] = Union[Forms[First[xi]], rxi];
+    AllScalForms = Union[AllScalForms, rxi];
+    Do[h = Head[rxi[[j]]]; 
+     If[h === Symbol, FormDegree[rxi[[j]]] = First[xi]; 
+      BasicScalFormQ[rxi[[j]]] = True;, FormDegree[_h] = First[xi]; 
+      BasicScalFormQ[_h] = True;], {j, Length[rxi]}], {i, 
+     Length[x]}];
+   AllDifForms = Union[AllScalForms]; oldHeads = ScalHeadList; 
+   ScalHeadList = 
+    Complement[Union[Head /@ AllScalForms, ScalHeadList], {Symbol}]; 
+   newHeads = Complement[ScalHeadList, oldHeads]; 
+   AllSymbols = Union[AllDifForms];
+   HeadList = Union[Head /@ AllSymbols]; 
+   DifFormSymbols = Drop[AllDifForms, -Length[ScalHeadList]];
+   k = Thread[Blank[ScalHeadList]]; 
+   FormVars = 
+    Flatten[{_Wedge, _d, Union[k, Bar[k]], 
+      u_ | Bar[u_] /; MemberQ[DifFormSymbols, u], _tr}];];
+
+NoDif[z__] := (nodHeads = Union[nodHeads, Flatten[{z}]];)
+
+BasicScalFormQ[Bar[x_]] := BasicScalFormQ[x]; 
+BasicScalFormQ[_d] = True; BasicScalFormQ[x_] := False;
+
+ScalFormQ[x_Times] := Or @@ ScalFormQ /@ List @@ x; 
+ScalFormQ[x_Wedge | x_Plus] := And @@ ScalFormQ /@ List @@ x; 
+ScalFormQ[x_] := BasicScalFormQ[x];
+
+SetAttributes[d, {Listable}]; 
+d[x_Times | x_Wedge] := 
+ d[First[x]]\[Wedge]Rest[x] + (-1)^FormDegree[First[x]]*
+   First[x]\[Wedge]d[Rest[x]]; d[x_?NumericQ | x_d] = 0; 
+d[Power[y_, n_]] := n y^(n - 1) d[y] + y^n Log[y] d[n]; 
+d[x_Plus] := d /@ x; 
+HoldPattern[d[Bar[x_]]] := 
+ With[{evalHx = d[x]}, Bar[evalHx] /; Head[evalHx] =!= d]; 
+d[x_Rule | x_Equal] := reWrite[d /@ x]; 
+d[x_SeriesData] := (x /. x[[3]] -> d[x[[3]]]) + 
+  Wedge[d[First[x]], D[x, First[x]]]; 
+d[h_[y__] /; ! MemberQ[nodHeads, h]] := 
+ Sum[(Derivative[
+        Sequence @@ 
+         RotateRight[Append[Table[0, {Length[{y}] - 1}], 1], i]][h][
+      y]) d[{y}[[i]]], {i, Length[{y}]}] /; 
+  FormDegree[h[y]] === 0 && ! 
+    MemberQ[{Integer, Blank, Pattern, Condition}, Head[First[{y}]]];
+
+newSer$[x_SeriesData, k_] := 
+ SeriesData[First[x], x[[2]], 
+  Flatten[Transpose[
+    Prepend[Table[Table[0, {Length[x[[3]]]}], {k - 1}], x[[3]]]]], 
+  k x[[4]], k x[[5]], k Last[x]]
+
+Wedge[x_] := x /; Length[{x}] < 2 && Head[{x}[[1]]] =!= Pattern
+
+Default[Wedge] := 1; SetAttributes[Wedge, {Flat, OneIdentity}]; 
+Wedge[0, y__] = 0; Wedge[x__, 0] = 0; 
+Wedge[x_SeriesData, y_SeriesData] := 
+ Block[{x$, y$, r1, r2, res, x3, y3}, 
+   If[Last[x] === Last[y], x$ = x; y$ = y, 
+    x$ = newSer$[x, LCM[Last[x], Last[y]]/Last[x]]; 
+    y$ = newSer$[y, LCM[Last[x], Last[y]]/Last[y]]]; 
+   r1 = x$[[-3]] + y$[[-3]]; 
+   r2 = Min[x$[[-2]] + y$[[-3]], x$[[-3]] + y$[[-2]]]; 
+   If[Length[x$[[3]]] < x$[[-2]] - x$[[-3]], 
+    x3 = Join[x$[[3]], 
+      Table[0, {x$[[-2]] - x$[[-3]] - Length[x$[[3]]]}]], 
+    x3 = x$[[3]]]; 
+   If[Length[y$[[3]]] < y$[[-2]] - y$[[-3]], 
+    y3 = Join[y$[[3]], 
+      Table[0, {y$[[-2]] - y$[[-3]] - Length[y$[[3]]]}]], 
+    y3 = y$[[3]]]; 
+   Which[r2 === r1, res = {}, r2 - r1 === x$[[-2]] - x$[[-3]], 
+    res = Sum[
+      Map[Wedge[x3[[i]], #] &, 
+       Join[Table[0, {i - 1}], Drop[y3, -i + 1]]], {i, Length[x3]}], 
+    True, res = 
+     Sum[Map[Wedge[#, y3[[i]]] &, 
+       Join[Table[0, {i - 1}], Drop[x3, -i + 1]]], {i, Length[y3]}]]; 
+   SeriesData[First[x$], x$[[2]], res, r1, r2, Last[x$]]] /; 
+  First[x] === First[y] && x[[2]] === y[[2]]; 
+Wedge[y_, x_SeriesData] := x /. x[[3]] -> Map[Wedge[y, #] &, x[[3]]]; 
+Wedge[x_SeriesData, y_] := x /. x[[3]] -> Map[Wedge[#, y] &, x[[3]]];
+Wedge[x__, y_Plus] := Plus @@ Map[Wedge[x, #] &, List @@ y];
+Wedge[x_Plus, y__] := Plus @@ Map[Wedge[#, y] &, List @@ x]; 
+Wedge[u__, Times[x_, y_]] := 
+ Times[x, Wedge[u, y]] /; NumericQ[x] || FormDegree[x] === 0;
+Wedge[Times[x_, y_], z__] := 
+ Times[x, Wedge[y, z]] /; NumericQ[x] || FormDegree[x] === 0; 
+x_^n_.\[Wedge]y_ := x^n*y /; FormDegree[x] === 0;
+y_\[Wedge]x_^n_. := x^n*y /; FormDegree[x] === 0;
+Wedge[x_, y___, x_] := 0 /; OddQ[FormDegree[x]] && ScalFormQ[x]; 
+Wedge[x__] := 
+ Block[{doubL = Transpose[{FormDegree /@ {x}, {x}}]}, 
+   Signature[Select[doubL, OddQ[First[#]] &]] Wedge @@ 
+     Map[Last[#1] &, Sort[doubL]]] /; 
+  Union[BasicScalFormQ /@ {x}] === {True} && 
+   Map[Last[#1] &, Sort[Transpose[{FormDegree /@ {x}, {x}}]]] =!= {x};
+
+simpRules = {Cos[z_]^2*(x_.) + (x_.)*Sin[z_]^2 -> x}; varList = {};
+
+coll[x_] := Collect[x, {_Wedge, _tr}, Factor];
+
+SetAttributes[reWrite, {Listable}]; reWrite[0] = 0; 
+reWrite[x_Equal] := Equal[reWrite[First[x] - Last[x]], 0]; 
+reWrite[x_Rule] := Rule[First[x], reWrite[Last[x]]]; 
+reWrite[x_SeriesData] := (x /. x[[3]] -> reWrite[x[[3]]]); 
+reWrite[x_] := (Collect[coll[x] /. simpRules, FormVars, 
+     bestFacRul] /. simpRules) /; FormDegree[x] > 0; 
+reWrite[x_] := bestFacRul[x /. simpRules] /. simpRules;
+
+FreeALLQ[x_, y_List] := And @@ Map[FreeQ[x, #] &, y];
+
+bestFacRul[x_] := 
+ If[varList === {} || FreeALLQ[x, varList], minFacRul[x], 
+  varFacRul[x]]; 
+varFacRul[x_] := 
+ Collect[Expand[x] /. simpRules, varList, Factor] /. simpRules; 
+minFacRul[x_] := Factor[Expand[x] /. simpRules] /. simpRules;
+
+Unprotect[SeriesData]; If[$VersionNumber < 5, 
+ Times[x_SeriesData, 0] ^= 0]; 
+SeriesData[x1_, x2_, x3_, x4_, x5_, x6_] := 
+ Plus @@ If[x2 === Infinity, 
+    Map[First[#]/x1^((x4 + Last[#] - 1)/x6) &, 
+      Transpose[{x3, Range[Length[x3]]}]] + 
+     SeriesData[x1, x2, {}, x4, x5, x6],   
+    Map[First[#]*(x1 - x2)^((x4 + Last[#] - 1)/x6) &, 
+      Transpose[{x3, Range[Length[x3]]}]] + 
+     SeriesData[x1, x2, {}, x4, x5, x6]] /; ! 
+   FreeQ[x3, x1]; Protect[SeriesData];
+
+On[General::"spell", General::"spell1", UpSet::"write"];
+
+
+(* ---------- Curvature Invariants ---------- *)
 
 Christoffel[g_, xx_] := 
   Table[1/2 Sum[
@@ -411,10 +666,31 @@ GRInvariants[g_,xx_,OptionsPattern[]] :=
         Lovelock[3,11][g,xx]
     }]
 
-(* Other functions *)
+
+(* ---------- Diff Geo ---------- *)
 Options[Form2Metric] = {Assumptions->None};
-Form2Metric[g_, xx_] := Simplify[Table[If[i === j, 1, 1/2] Coefficient[g, d[xx[[i]]] d[ xx[[j]]]], {i, 
-    Length[xx]}, {j, Length[xx]}],OptionValue[Assumptions]];
+Form2Metric[g_, xx_, OptionsPattern[]] := Simplify[Table[If[i === j, 1, 1/2] Coefficient[g, d[xx[[i]]] d[ xx[[j]]]], {i, 
+    Length[xx]}, {j, Length[xx]}], OptionValue[Assumptions]];
+Form2Metric[g_, OptionsPattern[]] := If[If[ValueQ[Symbol["Global`" <> SymbolName[xx]]], TensorRank[Symbol["Global`" <> SymbolName[xx]]] == 1, False],
+  Form2Metric[g, Symbol["Global`" <> SymbolName[xx]]],
+
+  Message[Form2Metric::missingInput];Return[$Failed]
+]
+
+Metric[str_, dim_] := Module[{gform, xx},
+  If[str == "S" || str == "s" || str == "Sphere" || str == "sphere" || str == "Spherical" || str == "spherical",
+    Print["Standard spherical metric in ", ToString[dim], " dimensions"];
+    xx = Global`\[Theta][#] & /@ Range[dim];
+    Print[Join[StringForm["0 < `` < \[Pi] ", #] & /@ xx[[;; -2]], {StringForm["0 < `` < 2\[Pi] ", xx[[-1]]]}] // MatrixForm];
+    gform = Total[d[#]^2 Times @@ (Sin[##]^2 & /@ xx[[1 ;; Position[xx, #][[1]][[1]] - 1]]) & /@ xx];
+  ];
+  If[str == "FS" || str == "fs" || str == "Fs" || str == "fS" || str == "FubiniStudy" || str == "fubinistudy" || str == "Fubinistudy" || str == "fubiniStudy" || str == "Fubini-Study" || str == "Fubini-study" || str == "fubini-Study" || str == "fubini-study",
+    Print[StringForm["Fubini-Study metric on \!\(\*SuperscriptBox[\(CP\),\(``\)]\)",dim], " where z[i] \[Element] C"];
+    xx = Flatten[{Global`z[#],Global`zb[#]} &/@ Range[dim]];
+    gform = Sum[d[xx[[2*ii - 1]]] d[xx[[2*ii]]], {ii, 1, dim}]/(1 + Sum[xx[[2*ii - 1]] xx[[2*ii]], {ii, 1, dim}])-(Sum[xx[[2*ii]]d[xx[[2*ii-1]]],{ii,1,dim}]Sum[xx[[2*ii-1]]d[xx[[2*ii]]],{ii,1,dim}])/(1 + Sum[xx[[2*ii - 1]] xx[[2*ii]], {ii, 1, dim}])//Expand
+  ];
+  Return[{xx, Form2Metric[gform, xx]}]
+]
 
 Options[HodgeStar] = {Assumptions->None, Type->None};
 HodgeStar[formT_, gT_, xx_, OptionsPattern[]] := 
@@ -475,7 +751,13 @@ HodgeStar[formT_, gT_, xx_, OptionsPattern[]] :=
 ]
 HodgeStar[formT_, gT_, OptionsPattern[]] := If[FormDegree[formT] != 0 || FormDegree[gT] != 0 || OptionValue[Type] == "Form",
   Message[HodgeStar::missingInput];Return[$Failed],
+
   HodgeStar[formT, gT, {}, OptionsPattern[]]];
+HodgeStar[formT_, OptionsPattern[]] := If[If[ValueQ[Symbol["Global`" <> SymbolName[g]]], TensorRank[Symbol["Global`" <> SymbolName[g]]] == 2, False],
+  HodgeStar[form, Symbol["Global`" <> SymbolName[g]], Symbol["Global`" <> SymbolName[xx]]],
+
+  Message[HodgeStar::missingInput];Return[$Failed]
+]
 
 (* Define the custom Star function that will wrap HodgeStar
 Star[form_, g_, xx_] := HodgeStar[form, g, xx];
@@ -487,9 +769,19 @@ InfixNotation[ParsedBoxWrapper[
 
 Options[SelfDualQ] = {Assumptions->None};
 SelfDualQ[formT_, gT_, xx_, OptionsPattern[]] := Simplify[formT-HodgeStar[formT,gT,xx],OptionValue[Assumptions]]===0;
+SelfDualQ[formT_, OptionsPattern[]] := If[If[ValueQ[Symbol["Global`" <> SymbolName[xx]]], TensorRank[Symbol["Global`" <> SymbolName[xx]]] == 1, False] && If[ValueQ[Symbol["Global`" <> SymbolName[g]]], TensorRank[Symbol["Global`" <> SymbolName[g]]] == 2, False],
+  SelfDualQ[form, Symbol["Global`" <> SymbolName[g]], Symbol["Global`" <> SymbolName[xx]]],
+
+  Message[SelfDualQ::missingInput];Return[$Failed]
+]
+
 Options[AntiSelfDualQ] = {Assumptions->None};
 AntiSelfDualQ[formT_, gT_, xx_, OptionsPattern[]] := Simplify[formT+HodgeStar[formT,gT,xx],OptionValue[Assumptions]]===0;
+AntiSelfDualQ[formT_, OptionsPattern[]] := If[If[ValueQ[Symbol["Global`" <> SymbolName[xx]]], TensorRank[Symbol["Global`" <> SymbolName[xx]]] == 1, False] && If[ValueQ[Symbol["Global`" <> SymbolName[g]]], TensorRank[Symbol["Global`" <> SymbolName[g]]] == 2, False],
+  AntiSelfDualQ[form, Symbol["Global`" <> SymbolName[g]], Symbol["Global`" <> SymbolName[xx]]],
 
+  Message[AntiSelfDualQ::missingInput];Return[$Failed]
+]
 
 Options[Form2Tensor] = {Type->"Normal", Assumptions->None};
 Form2Tensor[form_, xx_, OptionsPattern[]] := Module[
@@ -526,7 +818,12 @@ Form2Tensor[form_, xx_, OptionsPattern[]] := Module[
   If[OptionValue[Type] == "SparseArray", Return[SparseArray[antisymtensor]];,
     Return[Normal[antisymtensor]];];
   ]
- ];
+];
+Form2Tensor[form_, OptionsPattern[]] := If[If[ValueQ[Symbol["Global`" <> SymbolName[xx]]], TensorRank[Symbol["Global`" <> SymbolName[xx]]] == 1, False],
+  Form2Tensor[form, Symbol["Global`" <> SymbolName[xx]]],
+
+  Message[Form2Tensor::missingInput];Return[$Failed]
+]
 
 Options[Tensor2Form] = {Assumptions->None};
 Tensor2Form[tensor_, xx_, OptionsPattern[]] := Module[
@@ -552,19 +849,26 @@ Tensor2Form[tensor_, xx_, OptionsPattern[]] := Module[
     ];
   ];
 ]
+Tensor2Form[tensor_, OptionsPattern[]] := If[If[ValueQ[Symbol["Global`" <> SymbolName[xx]]], TensorRank[Symbol["Global`" <> SymbolName[xx]]] == 1, False],
+  Tensor2Form[tensor, Symbol["Global`" <> SymbolName[xx]]],
 
-Options[Lie] = {Assumptions->None, "Up"->None, "Down"->None};
+  Message[Tensor2Form::missingInput];Return[$Failed]
+]
+
+Options[Lie] = {Assumptions->None, "Up"->None, "Down"->None, Type->"Other"};
 Lie[vecT_, tensorT_, xx_, OptionsPattern[]] := Module[
-  {r, dim, up, down, lie, tensor, vec},
+  {r, dim, up, down, lie, tensor, vec, type},
 
   up = OptionValue["Up"];
   down = OptionValue["Down"];
+  type = OptionValue[Type];
 
   If[FormDegree[tensorT] != 0,
     r = FormDegree[tensorT];
     up = {};
     down = Range[r];
-    tensor = Form2Tensor[tensorT, xx],
+    tensor = Form2Tensor[tensorT, xx];
+    If[type == "Other", type = "Form";];,
 
     tensor = tensorT;
     r = TensorRank[tensor];
@@ -596,198 +900,89 @@ Lie[vecT_, tensorT_, xx_, OptionsPattern[]] := Module[
     lie += -Total[TensorTranspose[TensorContract[TensorProduct[Grad[vec, xx], tensor], {2, 2 + #}], Join[{#}, Complement[Range[r], {#}]]] & /@ up];
     lie += Total[TensorTranspose[TensorContract[TensorProduct[Grad[vec, xx], tensor], {1, 2 + #}], Join[{#}, Complement[Range[r], {#}]]] & /@ down];
   ];
-  Return[lie]
+  lie = Simplify[lie, OptionValue[Assumptions]];
+  If[type == "Form",
+    Return[Tensor2Form[lie,xx]];,
+    Return[lie];
+  ];
+]
+Lie[vecT_, tensorT_, OptionsPattern[]] := If[If[ValueQ[Symbol["Global`" <> SymbolName[xx]]], TensorRank[Symbol["Global`" <> SymbolName[xx]]] == 1, False],
+  Lie[vecT, tensorT, Symbol["Global`" <> SymbolName[xx]]],
+
+  Message[Lie::missingInput];Return[$Failed]
+]
+
+Options[KillingQ] = {Assumptions->None};
+KillingQ[vec_, g_, xx_, OptionsPattern[]] := Return[Simplify[Lie[vec, g, xx] === Table[0, {i, 1, Length[xx]}, {j, 1, Length[xx]}],OptionValue[Assumptions]]]
+KillingQ[vec_, g_, OptionsPattern[]] := Return[Simplify[Lie[vec, g] === Table[0, {i, 1, Length[Symbol["Global`" <> SymbolName[xx]]]}, {j, 1, Length[Symbol["Global`" <> SymbolName[xx]]]}],OptionValue[Assumptions]]]
+KillingQ[vec_, OptionsPattern[]] := If[If[ValueQ[Symbol["Global`" <> SymbolName[g]]], TensorRank[Symbol["Global`" <> SymbolName[g]]] == 2, False],
+  Return[Simplify[Lie[vec, Symbol["Global`" <> SymbolName[g]]] === Table[0, {i, 1, Length[Symbol["Global`" <> SymbolName[xx]]]}, {j, 1, Length[Symbol["Global`" <> SymbolName[xx]]]}],OptionValue[Assumptions]]],
+
+  Message[KillingQ::missingInput];Return[$Failed]
+]
+
+Options[InteriorProduct] = {Assumptions->None, Type->None};
+InteriorProduct[vec_, formT_, xx_, OptionsPattern[]] := 
+ Module[{tensor, m, dim, intRules = {}, inttensor, i, pos, val, ind, type = OptionValue[Type]},
+
+  If[FormDegree[formT] != 0,
+    tensor = Form2Tensor[formT,xx,Type->"SymmetrizedArray"];,
+
+    tensor = SymmetrizedArray[formT, Automatic, Antisymmetric[All]];
+  ];
+
+  If[Length[vec] != Length[xx],
+    Message[InteriorProduct::dimMismatch];Return[$Failed]
+  ];
+
+  If[type == None, type = "Form"];
+  
+  m = TensorRank[tensor];
+  If[StringContainsQ[ToString[m], "TensorRank"], m=0]; (* TensorRank gets confused if you provide a rank 0 tensor with a variable *)
+  dim = Length[xx];
+
+  If[m == 0,
+    inttensor = SymmetrizedArray[{}, Table[dim,r-1], Antisymmetric[All]];
+    If[type == "Form", 
+      Return[0];,
+      Return[inttensor];
+    ];,
+
+    tensorRules = Most[ArrayRules[tensor]];
+    tensorIndices = DeleteDuplicates[Sort[#] & /@ tensorRules[[All, 1]]];
+
+    vecIndices = Flatten[Position[vec, #] & /@ DeleteCases[vec, 0]];
+
+    For[i = 1, i <= Length[tensorIndices], i++, 
+      pos = Position[tensorRules[[All, 1]], tensorIndices[[i]]][[1, 1]];
+      val = tensorRules[[pos, 2]];
+      ind = tensorRules[[pos, 1]];
+      posvec = Position[ind, #];
+      If[Length[posvec] > 0,
+        posvec = Flatten[posvec][[1]];
+        AppendTo[intRules, 
+          DeleteCases[ind, ind[[posvec]]] -> Simplify[(-1)^(1 + Length[ind[[1 ;; posvec]]]) vec[[#]] val, OptionValue[Assumptions]]];
+      ];
+    ] & /@ vecIndices;
+    inttensor = SymmetrizedArray[intRules, Table[dim, {i, 1, m - 1}], Antisymmetric[All]];
+
+    If[type == "Form", 
+      Return[Tensor2Form[inttensor, xx]];,
+      Return[inttensor];
+    ];
+  ];
 ]
 
 (* TODO:
--inner prod
--Killing vec eq
+-Lie bracket
+-spin co
 -Conf Killing vec eq
+
+-gamma matrices basis
+-KSE
+
+-FG solver
 *)
-
-
-(* ---------- ScalarEDCode ---------- *)
-Off[General::"spell", General::"spell1", Remove::"rmnsm", 
-  UpSet::"write"];
-
-Unprotect["Global`*"]; ClearAll["Global`*"]; Remove["Global`*"]; \
-Unprotect[In, Out]; Clear[In, Out]; Protect[In, Out]; $Line = 0; \
-$RecursionLimit = 256; $IterationLimit = 4096;
-
-Forms[i_] := {}; AllScalForms = {}; AllDifForms = {}; AllSymbols = \
-{}; FormVars = {_Wedge, _d}; HeadList = {}; ScalHeadList = {}; \
-nodHeads = {Bar, Pattern, Condition, RuleDelayed, 
-  SeriesData}; $EDCversion = 360;
-
-zeroQ[0] = True; zeroQ[x_List] := And @@ (zeroQ /@ Union[Flatten[x]]);
- zeroQ[x_SeriesData] := If[x[[3]] === {}, True, False]; 
-zeroQ[x_] := False;
-
-SetAttributes[Bar, {Listable}]; Bar[Bar[x_]] = x; 
-Bar[Complex[u_, v_]] := Complex[u, -v]; 
-Bar[x_Plus | x_Times | x_Wedge | x_Power | x_Rule | x_Equal] := 
- Bar /@ x; 
-Bar[x_SeriesData] := 
- x /. {First[x] -> Bar[First[x]], x[[2]] -> Bar[x[[2]]], 
-   x[[3]] -> Bar /@ x[[3]]}; 
-Bar[DirectedInfinity[x_]] := DirectedInfinity[Bar[x]]; 
-Bar[d[x_]] := d[Bar[x]]; 
-Bar[Derivative[x__][y_][z__]] := 
- If[Union[Bar[{z}]] === Union[{z}], 
-  Derivative[
-     Sequence @@ 
-      Permutations[{x}][[
-       Position[Permutations[{z}], Bar[{z}]][[1, 1]]]]][Bar[y]][z], 
-  Derivative[x][Bar[y]][Sequence @@ Bar[{z}]]]; 
-Bar[x_] := x /; NumericQ[x];
-
-FormDegree[x_Plus] := FormDegree[First[x]]; 
-FormDegree[x_Times] := Plus @@ FormDegree /@ List @@ x;
-FormDegree[x_Wedge] := Plus @@ FormDegree /@ List @@ x;
-FormDegree[d[x_]] := FormDegree[d[x]] = 1 + FormDegree[x];
-FormDegree[x_List] := 
-  FormDegree[First[Select[Union[Flatten[x]], ! zeroQ[#] &]]];
-FormDegree[Bar[x_]] := FormDegree[Bar[x]] = FormDegree[x]; 
-FormDegree[x_SeriesData] := If[x[[3]] === {}, 0, FormDegree[x[[3]]]];
-FormDegree[x_] := 0;
-
-DeclareForms[z__] := 
-  Block[{h, x = {{z}}, xi, rxi, k, oldHeads, newHeads}, 
-   While[Head[x[[1, 1]]] === List, x = First[x]]; 
-   Do[xi = x[[i]]; rxi = Rest[xi]; 
-    Forms[First[xi]] = Union[Forms[First[xi]], rxi];
-    AllScalForms = Union[AllScalForms, rxi];
-    Do[h = Head[rxi[[j]]]; 
-     If[h === Symbol, FormDegree[rxi[[j]]] = First[xi]; 
-      BasicScalFormQ[rxi[[j]]] = True;, FormDegree[_h] = First[xi]; 
-      BasicScalFormQ[_h] = True;], {j, Length[rxi]}], {i, 
-     Length[x]}];
-   AllDifForms = Union[AllScalForms]; oldHeads = ScalHeadList; 
-   ScalHeadList = 
-    Complement[Union[Head /@ AllScalForms, ScalHeadList], {Symbol}]; 
-   newHeads = Complement[ScalHeadList, oldHeads]; 
-   AllSymbols = Union[AllDifForms];
-   HeadList = Union[Head /@ AllSymbols]; 
-   DifFormSymbols = Drop[AllDifForms, -Length[ScalHeadList]];
-   k = Thread[Blank[ScalHeadList]]; 
-   FormVars = 
-    Flatten[{_Wedge, _d, Union[k, Bar[k]], 
-      u_ | Bar[u_] /; MemberQ[DifFormSymbols, u], _tr}];];
-
-NoDif[z__] := (nodHeads = Union[nodHeads, Flatten[{z}]];)
-
-BasicScalFormQ[Bar[x_]] := BasicScalFormQ[x]; 
-BasicScalFormQ[_d] = True; BasicScalFormQ[x_] := False;
-
-ScalFormQ[x_Times] := Or @@ ScalFormQ /@ List @@ x; 
-ScalFormQ[x_Wedge | x_Plus] := And @@ ScalFormQ /@ List @@ x; 
-ScalFormQ[x_] := BasicScalFormQ[x];
-
-SetAttributes[d, {Listable}]; 
-d[x_Times | x_Wedge] := 
- d[First[x]]\[Wedge]Rest[x] + (-1)^FormDegree[First[x]]*
-   First[x]\[Wedge]d[Rest[x]]; d[x_?NumericQ | x_d] = 0; 
-d[Power[y_, n_]] := n y^(n - 1) d[y] + y^n Log[y] d[n]; 
-d[x_Plus] := d /@ x; 
-HoldPattern[d[Bar[x_]]] := 
- With[{evalHx = d[x]}, Bar[evalHx] /; Head[evalHx] =!= d]; 
-d[x_Rule | x_Equal] := reWrite[d /@ x]; 
-d[x_SeriesData] := (x /. x[[3]] -> d[x[[3]]]) + 
-  Wedge[d[First[x]], D[x, First[x]]]; 
-d[h_[y__] /; ! MemberQ[nodHeads, h]] := 
- Sum[(Derivative[
-        Sequence @@ 
-         RotateRight[Append[Table[0, {Length[{y}] - 1}], 1], i]][h][
-      y]) d[{y}[[i]]], {i, Length[{y}]}] /; 
-  FormDegree[h[y]] === 0 && ! 
-    MemberQ[{Integer, Blank, Pattern, Condition}, Head[First[{y}]]];
-
-newSer$[x_SeriesData, k_] := 
- SeriesData[First[x], x[[2]], 
-  Flatten[Transpose[
-    Prepend[Table[Table[0, {Length[x[[3]]]}], {k - 1}], x[[3]]]]], 
-  k x[[4]], k x[[5]], k Last[x]]
-
-Wedge[x_] := x /; Length[{x}] < 2 && Head[{x}[[1]]] =!= Pattern
-
-Default[Wedge] := 1; SetAttributes[Wedge, {Flat, OneIdentity}]; 
-Wedge[0, y__] = 0; Wedge[x__, 0] = 0; 
-Wedge[x_SeriesData, y_SeriesData] := 
- Block[{x$, y$, r1, r2, res, x3, y3}, 
-   If[Last[x] === Last[y], x$ = x; y$ = y, 
-    x$ = newSer$[x, LCM[Last[x], Last[y]]/Last[x]]; 
-    y$ = newSer$[y, LCM[Last[x], Last[y]]/Last[y]]]; 
-   r1 = x$[[-3]] + y$[[-3]]; 
-   r2 = Min[x$[[-2]] + y$[[-3]], x$[[-3]] + y$[[-2]]]; 
-   If[Length[x$[[3]]] < x$[[-2]] - x$[[-3]], 
-    x3 = Join[x$[[3]], 
-      Table[0, {x$[[-2]] - x$[[-3]] - Length[x$[[3]]]}]], 
-    x3 = x$[[3]]]; 
-   If[Length[y$[[3]]] < y$[[-2]] - y$[[-3]], 
-    y3 = Join[y$[[3]], 
-      Table[0, {y$[[-2]] - y$[[-3]] - Length[y$[[3]]]}]], 
-    y3 = y$[[3]]]; 
-   Which[r2 === r1, res = {}, r2 - r1 === x$[[-2]] - x$[[-3]], 
-    res = Sum[
-      Map[Wedge[x3[[i]], #] &, 
-       Join[Table[0, {i - 1}], Drop[y3, -i + 1]]], {i, Length[x3]}], 
-    True, res = 
-     Sum[Map[Wedge[#, y3[[i]]] &, 
-       Join[Table[0, {i - 1}], Drop[x3, -i + 1]]], {i, Length[y3]}]]; 
-   SeriesData[First[x$], x$[[2]], res, r1, r2, Last[x$]]] /; 
-  First[x] === First[y] && x[[2]] === y[[2]]; 
-Wedge[y_, x_SeriesData] := x /. x[[3]] -> Map[Wedge[y, #] &, x[[3]]]; 
-Wedge[x_SeriesData, y_] := x /. x[[3]] -> Map[Wedge[#, y] &, x[[3]]];
-Wedge[x__, y_Plus] := Plus @@ Map[Wedge[x, #] &, List @@ y];
-Wedge[x_Plus, y__] := Plus @@ Map[Wedge[#, y] &, List @@ x]; 
-Wedge[u__, Times[x_, y_]] := 
- Times[x, Wedge[u, y]] /; NumericQ[x] || FormDegree[x] === 0;
-Wedge[Times[x_, y_], z__] := 
- Times[x, Wedge[y, z]] /; NumericQ[x] || FormDegree[x] === 0; 
-x_^n_.\[Wedge]y_ := x^n*y /; FormDegree[x] === 0;
-y_\[Wedge]x_^n_. := x^n*y /; FormDegree[x] === 0;
-Wedge[x_, y___, x_] := 0 /; OddQ[FormDegree[x]] && ScalFormQ[x]; 
-Wedge[x__] := 
- Block[{doubL = Transpose[{FormDegree /@ {x}, {x}}]}, 
-   Signature[Select[doubL, OddQ[First[#]] &]] Wedge @@ 
-     Map[Last[#1] &, Sort[doubL]]] /; 
-  Union[BasicScalFormQ /@ {x}] === {True} && 
-   Map[Last[#1] &, Sort[Transpose[{FormDegree /@ {x}, {x}}]]] =!= {x};
-
-simpRules = {Cos[z_]^2*(x_.) + (x_.)*Sin[z_]^2 -> x}; varList = {};
-
-coll[x_] := Collect[x, {_Wedge, _tr}, Factor];
-
-SetAttributes[reWrite, {Listable}]; reWrite[0] = 0; 
-reWrite[x_Equal] := Equal[reWrite[First[x] - Last[x]], 0]; 
-reWrite[x_Rule] := Rule[First[x], reWrite[Last[x]]]; 
-reWrite[x_SeriesData] := (x /. x[[3]] -> reWrite[x[[3]]]); 
-reWrite[x_] := (Collect[coll[x] /. simpRules, FormVars, 
-     bestFacRul] /. simpRules) /; FormDegree[x] > 0; 
-reWrite[x_] := bestFacRul[x /. simpRules] /. simpRules;
-
-FreeALLQ[x_, y_List] := And @@ Map[FreeQ[x, #] &, y];
-
-bestFacRul[x_] := 
- If[varList === {} || FreeALLQ[x, varList], minFacRul[x], 
-  varFacRul[x]]; 
-varFacRul[x_] := 
- Collect[Expand[x] /. simpRules, varList, Factor] /. simpRules; 
-minFacRul[x_] := Factor[Expand[x] /. simpRules] /. simpRules;
-
-Unprotect[SeriesData]; If[$VersionNumber < 5, 
- Times[x_SeriesData, 0] ^= 0]; 
-SeriesData[x1_, x2_, x3_, x4_, x5_, x6_] := 
- Plus @@ If[x2 === Infinity, 
-    Map[First[#]/x1^((x4 + Last[#] - 1)/x6) &, 
-      Transpose[{x3, Range[Length[x3]]}]] + 
-     SeriesData[x1, x2, {}, x4, x5, x6],   
-    Map[First[#]*(x1 - x2)^((x4 + Last[#] - 1)/x6) &, 
-      Transpose[{x3, Range[Length[x3]]}]] + 
-     SeriesData[x1, x2, {}, x4, x5, x6]] /; ! 
-   FreeQ[x3, x1]; Protect[SeriesData];
-
-On[General::"spell", General::"spell1", UpSet::"write"];
 
 End[]                                                                           
                                                                                 
