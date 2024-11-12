@@ -137,14 +137,18 @@ Based on the EDC360 package. The exterior algebra part of this package defines t
 - [Tensor2Form](#tensor2form)
 - [HodgeStar](#hodgestar)
 - [SelfDualQ](#selfdualq)
+- [AntiSelfDualQ](#antiselfdualq)
+- [Lie](#lie)
+- [KillingQ](#killingq)
+- [InteriorProduct](#interiorproduct)
 
 ### Form2Metric
 `Form2Metric[g,xx]`: Converts a metric, (abusively) written using squared one-forms, into its matrix representation, using the set of coordinates `xx`.
 
 > Example
 > ```
-> g = d[r]^2 + r^2 d[\[Theta]]^2
-> xx = {r,\[Theta]}
+> g = d[r]^2 + r^2 d[\[Theta]]^2;
+> xx = {r,\[Theta]};
 >
 > Form2Metric[g, xx] = {{1,0},{0,r^2}}
 > ```
@@ -160,8 +164,8 @@ Optional Arguments:
 
 > Example
 > ```
-> form = d[x]\[Wedge]d[y]
-> xx = {x,y}
+> form = d[x]\[Wedge]d[y];
+> xx = {x,y};
 >
 > Form2Tensor[form, xx] = {{0,1},{-1,0}}
 > ```
@@ -178,8 +182,8 @@ Optional Arguments:
 
 > Example
 > ```
-> tensor = {{0,1},{-1,0}}
-> xx = {w,z}
+> tensor = {{0,1},{-1,0}};
+> xx = {w,z};
 >
 > Tensor2Form[tensor, xx] = d[w]\[Wedge]d[z]
 > ```
@@ -196,10 +200,10 @@ Optional Arguments:
 
 > Example
 > ```
-> xx = {r,\[Theta],\[Phi]}
-> g = Form2Metric[d[r]^2 + r^2 (d[\[Theta]]^2 + Sin[\[Theta]]^2 d[\[Phi]]^2), xx]
+> xx = {r,\[Theta],\[Phi]};
+> g = Form2Metric[d[r]^2 + r^2 (d[\[Theta]]^2 + Sin[\[Theta]]^2 d[\[Phi]]^2), xx];
 >
-> form = d[r]\[Wedge]d[\[Theta]]
+> form = d[r]\[Wedge]d[\[Theta]];
 > 
 > HodgeStar[form, g, xx] = (Sqrt[Abs[r^4 Sin[\[Theta]]^2]] d[\[Phi]])/r^2
 > HodgeStar[form, g, xx, Assumptions -> {r > 0, \[Theta] > 0, \[Theta] < \[Pi]}] = d[\[Phi]] Sin[\[Theta]]
@@ -226,3 +230,86 @@ Optional Arguments:
 > SelfDualQ[form1, g, xx] = False
 > SelfDualQ[form2, g, xx] = True
 > ```
+
+### AntiSelfDualQ
+`AntiSelfDualQ[form, g, xx]`: Return `True` if `form` is anti-self-dual wrt the metric `g` and `False` otherwise.
+
+Accepts rank-r tensor and r-form representation for the input. The former doesn't require the coordinates `xx` to be specified.
+
+`AntiSelfDualQ[form]` will try to use globally defined variables called `xx` as the set of coordinates and `g` as the metric and then calls `AntiSelfDualQ[form, g, xx]`.
+
+Optional Arguments:
+  - `Assumptions->None`: Array of assumptions used in Simplify
+
+> Example
+> ```
+> xx = {x1, x2, x3, x4};
+> g = IdentityMatrix[4];
+> 
+> form1 = d[x1]\[Wedge]d[x2] - d[x3]\[Wedge]d[x4];
+> form2 = d[x1]\[Wedge]d[x2] + d[x3]\[Wedge]d[x4];
+> 
+> AntiSelfDualQ[form1, g, xx] = True
+> AntiSelfDualQ[form2, g, xx] = False
+> ```
+
+### Lie
+`Lie[vec, tensor, xx]`: Returns the Lie derivative of `tensor` with respect to the vector `vec` using the set of coordinates `xx`.
+A unit vector in the coordinates can be used as vector input by specifying an integer (in the range 1 to `Length[xx]`) instead of `vec`.
+A form of degree r can be used in lieu of `tensor`, after which it is converted to a tensor of rank r.
+
+`Lie[vec, tensor]` will try to use a globally defined variable called `xx` as the set of coordinates and then call `Lie[vec, tensor, xx]`.
+
+Optional Arguments:
+  - `Assumptions->None`: Array of assumptions used in Simplify
+  - `"Up"->None`: Array containing the set of indices in 'tensor' which are contravariant (or up)
+  - `"Down"->Range[rank]`: Array containing the set of indices in 'tensor' which are covariant (or down)
+  - `Type->"Other"`: Used to specify the output format. `Type->"Form"` will output the tensor as a rank-r form (defaults to that when using a form as input)
+
+> Example
+> ```
+> xx = {r, \[Theta], \[Phi]};
+> g = DiagonalMatrix[{1, r^2, r^2 Sin[\[Theta]]^2}];
+> 
+> vec = {r^2, \[Theta], 0};
+> tensor = {{r, \[Theta]}, {Sin[\[Theta]], Cos[\[Theta]]}};
+> 
+> Lie[vec, tensor] = {{r^2, \[Theta]}, {\[Theta] Cos[\[Theta]], -\[Theta] Sin[\[Theta]]}}
+> ```
+
+> Example
+> ```
+> xx = {r, \[Theta], \[Phi]};
+> g = DiagonalMatrix[{1, r^2, r^2 Sin[\[Theta]]^2}];
+> 
+> Lie[1, g] = {{0, 0, 0}, {0, 2 r, 0}, {0, 0, 2 r Sin[\[Theta]]^2}}
+> Lie[3, g] = {{0, 0, 0}, {0, 0, 0}, {0, 0, 0}}
+> ```
+
+### KillingQ
+`KillingQ[vector, g, xx]`: Returns `True` if the vector is Killing with respect to the metric `g` given the set of coordinates `xx`.
+
+`KillingQ[vector, g]` will try to use a globally defined variable called `xx` as the set of coordinates and then calls `KillingQ[vector, g, xx]`.
+
+`KillingQ[vector]` will try to use a globally defined variable called `g` as the metric and then calls `KillingQ[vector, g]`.
+
+Optional Arguments:
+  - `Assumptions->None`: Array of assumptions used in Simplify
+
+### InteriorProduct
+`InteriorProduct[vec, form, xx]`: Returns the interior product of the form with respect to the vector `vec` given the set of coordinates `xx`.
+
+`InteriorProduct[vec, tensor, xx]`: Returns the interior product of the tensor with respect to the vector `vec` given the set of coordinates `xx`.
+
+Optional Arguments:
+  - `Assumptions->None`: Array of assumptions used in Simplify
+  - `Type->"Other"`: Used to specify the ouput format. `Type->"Form"` will output a rank r-1 form (defaults to that when using rank-r form as input)
+
+# Future Additions
+- [ ] Lie Bracket
+- [ ] Vielbeins
+- [ ] Spin connection
+- [ ] Conformal Killing Vector
+- [ ] Gamma matrices
+- [ ] Killing Spinors
+- [ ] Fefferman-Graham Gauge
