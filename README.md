@@ -260,6 +260,13 @@ A form of degree r can be used in lieu of `tensor`, after which it is converted 
 
 `Lie[vec, tensor]` will try to use a globally defined variable called `xx` as the set of coordinates and then call `Lie[vec, tensor, xx]`.
 
+Let `tensor` be a $(p,q)$-tensor, whose components are denoted by $`T^{\mu_1\cdots \mu_p}{}_{\nu_1\cdots\nu_q}`$, and let's denote the components of `vec` by $`\xi^\mu`$. Then `Lie[vec, tensor, xx]` is also a $(p,q)$-tensor with components
+
+```math
+(\mathcal{L}_{\xi}T)^{\mu_1\cdots \mu_p}{}_{\nu_1\cdots\nu_q} = \xi^\rho\partial_\rho T^{\mu_1\cdots \mu_p}{}_{\nu_1\cdots\nu_q} - \partial_\rho\xi^{\mu_1}T^{\rho\mu_2\cdots \mu_p}{}_{\nu_1\cdots\nu_q} - \cdots - \partial_\rho\xi^{\mu_p}T^{\mu_\cdots \mu_{p-1}\rho}{}_{\nu_1\cdots\nu_q}
++ \partial_{\nu_1}\xi^{\rho}T^{\mu_1\cdots \mu_p}{}_{\rho\nu_2\cdots\nu_q} + \cdots + \partial_{\nu_q}\xi^{\rho}T^{\mu_1\cdots \mu_p}{}_{\nu_1\cdots\nu_{q-1}\rho}
+```
+
 Optional Arguments:
   - `Assumptions->None`: Array of assumptions used in Simplify
   - `"Up"->None`: Array containing the set of indices in 'tensor' which are contravariant (or up)
@@ -287,11 +294,52 @@ Optional Arguments:
 > ```
 
 ### KillingQ
-`KillingQ[vector, g, xx]`: Returns `True` if the vector is Killing with respect to the metric `g` given the set of coordinates `xx`.
+`KillingQ[vector, g, xx]`: Returns `True` if the vector is Killing with respect to the metric `g` given the set of coordinates `xx`, and `False` otherwise.
 
 `KillingQ[vector, g]` will try to use a globally defined variable called `xx` as the set of coordinates and then calls `KillingQ[vector, g, xx]`.
 
 `KillingQ[vector]` will try to use a globally defined variable called `g` as the metric and then calls `KillingQ[vector, g]`.
+
+Optional Arguments:
+  - `Assumptions->None`: Array of assumptions used in Simplify
+
+### Cov
+`Cov[vec, tensor, g, xx]`: Returns the covariant derivative of `tensor` with respect to the vector `vec` using the Christoffel symbols built from the metric `g` and set of coordinates `xx`.
+A unit vector in the coordinates can be used as vector input by specifying an integer (in the range 1 to `Length[xx]`) instead of `vec`.
+A form of degree r can be used in lieu of `tensor`, after which it is converted to a tensor of rank r.
+
+`Cov[vec, tensor, g]` will try to use a globally defined variable called `xx` as the set of coordinates and then calls `Lie[vec, tensor, g, xx]`.
+`Cov[vec, tensor]` will try to use a globally defined variable called `g` as the metric and then calls `Lie[vec, tensor, g]`.
+
+Let `tensor` be a $(p,q)$-tensor, whose components are denoted by $`T^{\mu_1\cdots \mu_p}{}_{\nu_1\cdots\nu_q}`$, and let's denote the components of `vec` by $`\xi^\mu`$. Then `Cov[vec, tensor, xx]` is also a $(p,q)$-tensor with components
+
+```math
+(\nabla_{\xi}T)^{\mu_1\cdots \mu_p}{}_{\nu_1\cdots\nu_q} = \xi^\rho\partial_\rho T^{\mu_1\cdots \mu_p}{}_{\nu_1\cdots\nu_q} + \xi^{\rho}\Gamma^{\mu_1}{}_{\rho\sigma}T^{\sigma\mu_2\cdots \mu_p}{}_{\nu_1\cdots\nu_q} + \cdots + \xi^{\rho}\Gamma^{\mu_p}{}_{\rho\sigma}T^{\mu_\cdots \mu_{p-1}\sigma}{}_{\nu_1\cdots\nu_q}
+- \xi^{\rho}\Gamma^{\sigma}{}_{\rho\nu_1}T^{\mu_1\cdots \mu_p}{}_{\sigma\nu_2\cdots\nu_q} - \cdots - \xi^{\rho}\Gamma^{\sigma}{}_{\rho\nu_q}T^{\mu_1\cdots \mu_p}{}_{\nu_1\cdots\nu_{q-1}\sigma}
+```
+
+Optional Arguments:
+  - `Assumptions->None`: Array of assumptions used in Simplify
+  - `"Up"->None`: Array containing the set of indices in 'tensor' which are contravariant (or up)
+  - `"Down"->Range[rank]`: Array containing the set of indices in 'tensor' which are covariant (or down)
+  - `Type->"Other"`: Used to specify the output format. `Type->"Form"` will output the tensor as a rank-r form (defaults to that when using a form as input)
+
+> Example
+> ```
+> 
+> ```
+
+> Example
+> ```
+> 
+> ```
+
+### ConfKillingQ
+`ConfKillingQ[vector, g, xx]`: Returns `True` if the vector is conformal Killing with respect to the metric `g` given the set of coordinates `xx`, and `False` otherwise.
+
+`ConfKillingQ[vector, g]` will try to use a globally defined variable called `xx` as the set of coordinates and then calls `ConfKillingQ[vector, g, xx]`.
+
+`ConfKillingQ[vector]` will try to use a globally defined variable called `g` as the metric and then calls `ConfKillingQ[vector, g]`.
 
 Optional Arguments:
   - `Assumptions->None`: Array of assumptions used in Simplify
@@ -306,6 +354,7 @@ Optional Arguments:
   - `Type->"Other"`: Used to specify the ouput format. `Type->"Form"` will output a rank r-1 form (defaults to that when using rank-r form as input)
 
 # Future Additions
+- [ ] Fix optional arguments when specifying part of the inputs. eg `Lie[vec, g, xx, "Down" -> {1, 2}]` works but `Lie[vec, g, "Down" -> {1, 2}]` confuses the option for `xx`
 - [ ] Lie Bracket
 - [ ] Vielbeins
 - [ ] Spin connection
