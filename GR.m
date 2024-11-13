@@ -6,13 +6,13 @@ Organization: University of Southampton *)
 (* This package contains definitions for various curvature invariants of General Relativity and custom implementations of exterior calculus *)
 BeginPackage["GRBenterre`"]
 
-Christoffel::usage = "Calculates the Christoffel symbols for the associated metric g and coordinates xx.
+Christoffel::usage = "Christoffel[g, xx] Calculates the Christoffel symbols for the associated metric g and coordinates xx.
 Conventions are such that its components are given by spacetime indices \!\(\*SubscriptBox[SuperscriptBox[\[CapitalGamma],\[Mu]], \[Nu]\[Rho]]\) in that same order.
 These are computed from the metric using
 
 \!\(\*SubscriptBox[SuperscriptBox[\[CapitalGamma],\[Mu]], \[Nu]\[Rho]]=\*FractionBox[\(1\), \(2\)]\\ \*SuperscriptBox[\(g\),\[Mu]\[Sigma]]\\ ( \*SubscriptBox[\(\[PartialD]\), \(\[Nu]\)]\*SubscriptBox[\(g\),\[Rho]\[Sigma]]+\*SubscriptBox[\(\[PartialD]\), \(\[Rho]\)]\*SubscriptBox[\(g\),\[Nu]\[Sigma]]-\*SubscriptBox[\(\[PartialD]\), \(\[Sigma]\)]\*SubscriptBox[\(g\),\[Nu]\[Rho]]) \)"
 
-RiemannTensor::usage = "Calculates the Riemann tensor for the associated metric g and coordinates xx.
+RiemannTensor::usage = "RiemannTensor[g, xx] Calculates the Riemann tensor for the associated metric g and coordinates xx.
 Conventions are such that all spacetime indices are down \!\(\*SubscriptBox[\(R\), \[Mu]\[Nu]\[Rho]\[Sigma]]\).
 The components are computed from the metric using
 
@@ -190,7 +190,7 @@ Common usage HodgeStar[form, g, xx]."
 SelfDualQ::usage = "SelfDualQ[form, metric, coords]: return true if form is self-dual wrt the metric and false otherwise.
 Accepts rank-r tensor and r-form representation for the input form. The former doesn't require coords to be specified.
 
-SelfDualQ[form] will try to use globally defined variables called 'xx' as the set of coordinates and 'g' as the metric and then call SelfDualQ[form, g, xx].
+SelfDualQ[form] will try to use globally defined variables called 'xx' as the set of coordinates and 'g' as the metric and then calls SelfDualQ[form, g, xx].
 
 Optional Arguments:
   - Assumptions->None: Array of assumptions used in Simplify"
@@ -199,14 +199,14 @@ SelfDualQ::missingInput = "Cannot locate a globally defined array of coordinates
 AntiSelfDualQ::usage = "AntiSelfDualQ[form, g, xx]: return true if form is anti-self-dual wrt the metric 'g' and false otherwise.
 Accepts rank-r tensor and r-form representation for the input form. The former doesn't require coords to be specified.
 
-AntiSelfDualQ[form] will try to use globally defined variables called 'xx' as the set of coordinates and 'g' as the metric and then call AntiSelfDualQ[form, g, xx].
+AntiSelfDualQ[form] will try to use globally defined variables called 'xx' as the set of coordinates and 'g' as the metric and then calls AntiSelfDualQ[form, g, xx].
 
 Optional Arguments:
   - Assumptions->None: Array of assumptions used in Simplify"
 AntiSelfDualQ::missingInput = "Cannot locate a globally defined array of coordinates, xx and/or metric g. Either provide them as an input or define them globally."
 
 Form2Tensor::usage = "Form2Tensor[form, xx]: Converts a d-form, represented using d[x]\[Wedge]d[y]... into its tensor components. 'xx' is a list of coordinates.
-Form2Tensor[form] will try to use a globally defined variable called 'xx' as the set of coordinates and then call Form2Tensor[form, xx].
+Form2Tensor[form] will try to use a globally defined variable called 'xx' as the set of coordinates and then calls Form2Tensor[form, xx].
 
 Optional Arguments:
   - Assumptions->None: Array of assumptions used in Simplify
@@ -214,7 +214,7 @@ Optional Arguments:
 Form2Tensor::missingInput = "Cannot locate a globally defined array of coordinates, xx. Either provide it as an input or define one globally."
 
 Tensor2Form::usage = "Tensor2Form[tensor, xx]: Converts a tensor of any dimension into its form representation, using the d[] function. xx is a list of coordinates.
-Tensor2Form[tensor] will try to use a globally defined variable called 'xx' as the set of coordinates and then call Tensor2Form[tensor, xx].
+Tensor2Form[tensor] will try to use a globally defined variable called 'xx' as the set of coordinates and then calls Tensor2Form[tensor, xx].
 If the original tensor has a symmetric part, it is automatically set to zero.
 
 Optional Arguments:
@@ -230,24 +230,48 @@ Lie::usage = "Lie[vec, tensor, xx] Returns the Lie derivative of 'tensor' wrt to
 A unit vector in the coordinates can be used as vector input by specifying an integer (in the range 1 to Length[xx]) instead of 'vec'.
 A form of degree r can be used in lieu of 'tensor', after which it is converted to a tensor of rank r.
 
-Lie[vec, tensor] will try to use a globally defined variable called 'xx' as the set of coordinates and then call Lie[vec, tensor, xx].
+Lie[vec, tensor] will try to use a globally defined variable called 'xx' as the set of coordinates and then calls Lie[vec, tensor, xx].
 
 Optional Arguments:
   - Assumptions->None: Array of assumptions used in Simplify
-  - \"Up\"->None: Array containing the set of indices in 'tensor' which are contravariant (or up)
-  - \"Down\"->Range[rank]: Array containing the set of indices in 'tensor' which are covariant (or down)
+  - \"Up\"->Range[rank]: Array containing the set of indices in 'tensor' which are contravariant (or up)
+  - \"Down\"->{}: Array containing the set of indices in 'tensor' which are covariant (or down)
   - Type->\"Other\": Used to specify the output format. Type->\"Form\" will output the tensor as a rank-r form (defaults to that when using a form as input)
 "
 Lie::vectorDim = "Dimensions of vector don't match that of the coordinates. Please provide a correct vector."
 Lie::missingInput = "Cannot locate a globally defined array of coordinates, xx. Either provide it as an input or define one globally."
 
 KillingQ::usage = "KillingQ[vector, g, xx]: returns true if the vector is Killing wrt the metric 'g' given the set of coordinates 'xx'.
-KillingQ[vector, g] will try to use a globally defined variable called 'xx' as the set of coordinates and then call KillingQ[vector, g, xx].
-KillingQ[vector] will try to use a globally defined variable called 'g' as the metric and then call KillingQ[vector, g].
+KillingQ[vector, g] will try to use a globally defined variable called 'xx' as the set of coordinates and then calls KillingQ[vector, g, xx].
+KillingQ[vector] will try to use a globally defined variable called 'g' as the metric and then calls KillingQ[vector, g].
 
 Optional Arguments:
   - Assumptions->None: Array of assumptions used in Simplify"
-KillingQ::missingInput = "Cannot locate a globally defined metric g. Either provide it as an input or define one globally."
+KillingQ::missingInput = "Cannot locate a globally defined metric g or coordinates xx. Either provide them as input or define them globally."
+
+Cov::usage = "Cov[vec, tensor, g, xx] Returns the covariant derivative of 'tensor' wrt to the vector 'vec' using the metric 'g' and set of coordinates 'xx'.
+A unit vector in the coordinates can be used as vector input by specifying an integer (in the range 1 to Length[xx]) instead of 'vec'.
+A form of degree r can be used in lieu of 'tensor', after which it is converted to a tensor of rank r.
+
+Cov[vec, tensor, g] will try to use a globally defined variable called 'xx' as the set of coordinates and then calls Cov[vec, tensor, g, xx].
+Cov[vec, tensor] will try to use a globally defined variable called 'g' as the metric and then calls Cov[vec, tensor, xx].
+
+Optional Arguments:
+  - Assumptions->None: Array of assumptions used in Simplify
+  - \"Up\"->Range[rank]: Array containing the set of indices in 'tensor' which are contravariant (or up)
+  - \"Down\"->{}: Array containing the set of indices in 'tensor' which are covariant (or down)
+  - Type->\"Other\": Used to specify the output format. Type->\"Form\" will output the tensor as a rank-r form (defaults to that when using a form as input)
+"
+Cov::vectorDim = "Dimensions of vector don't match that of the coordinates. Please provide a correct vector."
+Cov::missingInput = "Cannot locate a globally defined matrix g or array of coordinates, xx. Either provide them as a inputs or define them globally."
+
+ConfKillingQ::usage = "ConfKillingQ[vector, g, xx]: returns true if the vector is conformal Killing wrt the metric 'g' given the set of coordinates 'xx'.
+ConfKillingQ[vector, g] will try to use a globally defined variable called 'xx' as the set of coordinates and then calls ConfKillingQ[vector, g, xx].
+ConfKillingQ[vector] will try to use a globally defined variable called 'g' as the metric and then calls ConfKillingQ[vector, g].
+
+Optional Arguments:
+  - Assumptions->None: Array of assumptions used in Simplify"
+ConfKillingQ::missingInput = "Cannot locate a globally defined metric g or coordinates xx. Either provide them as a input or define them globally."
 
 InteriorProduct::usage = "InteriorProduct[vec, form, xx] returns the interior product of the form with respect to the vector 'vec' given the set of coordinates 'xx'.
 InteriorProduct[vec, tensor, xx] returns the interior product of the tensor with respect to the vector 'vec' given the set of coordinates 'xx'.
@@ -855,7 +879,7 @@ Tensor2Form[tensor_, OptionsPattern[]] := If[If[ValueQ[Symbol["Global`" <> Symbo
   Message[Tensor2Form::missingInput];Return[$Failed]
 ]
 
-Options[Lie] = {Assumptions->None, "Up"->None, "Down"->None, Type->"Other"};
+Options[Lie] = {Assumptions->None, "Up"->{}, "Down"->{}, Type->"Other"};
 Lie[vecT_, tensorT_, xx_, OptionsPattern[]] := Module[
   {r, dim, up, down, lie, tensor, vec, type},
 
@@ -875,9 +899,15 @@ Lie[vecT_, tensorT_, xx_, OptionsPattern[]] := Module[
     If[StringContainsQ[ToString[r], "TensorRank"], r=0];
   ];
 
-  If[up==None && down==None,
-    up={};
-    down=Range[r];
+  If[Length[up]==0 && Length[down]==0,
+    up=Range[r];
+    down={};
+  ];
+  If[Length[up]==0 && Length[down]!=0,
+    up=Complement[Range[r],down];
+  ];
+  If[Length[up]!=0 && Length[down]==0,
+    down=Complement[Range[r],up];
   ];
 
   If[Length[vecT] == 0,
@@ -896,7 +926,7 @@ Lie[vecT_, tensorT_, xx_, OptionsPattern[]] := Module[
 
   lie = TensorContract[TensorProduct[Grad[tensor, xx], vec], {r + 1, r + 2}];
   
-  If[rank > 0,
+  If[r > 0,
     lie += -Total[TensorTranspose[TensorContract[TensorProduct[Grad[vec, xx], tensor], {2, 2 + #}], Join[{#}, Complement[Range[r], {#}]]] & /@ up];
     lie += Total[TensorTranspose[TensorContract[TensorProduct[Grad[vec, xx], tensor], {1, 2 + #}], Join[{#}, Complement[Range[r], {#}]]] & /@ down];
   ];
@@ -907,18 +937,104 @@ Lie[vecT_, tensorT_, xx_, OptionsPattern[]] := Module[
   ];
 ]
 Lie[vecT_, tensorT_, OptionsPattern[]] := If[If[ValueQ[Symbol["Global`" <> SymbolName[xx]]], TensorRank[Symbol["Global`" <> SymbolName[xx]]] == 1, False],
-  Lie[vecT, tensorT, Symbol["Global`" <> SymbolName[xx]]],
+  Lie[vecT, tensorT, Symbol["Global`" <> SymbolName[xx]], Assumptions->OptionValue[Assumptions], "Up"->OptionValue["Up"], "Down"->OptionValue["Down"], Type->OptionValue[Type]],
 
   Message[Lie::missingInput];Return[$Failed]
 ]
 
 Options[KillingQ] = {Assumptions->None};
-KillingQ[vec_, g_, xx_, OptionsPattern[]] := Return[Simplify[Lie[vec, g, xx] === Table[0, {i, 1, Length[xx]}, {j, 1, Length[xx]}],OptionValue[Assumptions]]]
-KillingQ[vec_, g_, OptionsPattern[]] := Return[Simplify[Lie[vec, g] === Table[0, {i, 1, Length[Symbol["Global`" <> SymbolName[xx]]]}, {j, 1, Length[Symbol["Global`" <> SymbolName[xx]]]}],OptionValue[Assumptions]]]
-KillingQ[vec_, OptionsPattern[]] := If[If[ValueQ[Symbol["Global`" <> SymbolName[g]]], TensorRank[Symbol["Global`" <> SymbolName[g]]] == 2, False],
-  Return[Simplify[Lie[vec, Symbol["Global`" <> SymbolName[g]]] === Table[0, {i, 1, Length[Symbol["Global`" <> SymbolName[xx]]]}, {j, 1, Length[Symbol["Global`" <> SymbolName[xx]]]}],OptionValue[Assumptions]]],
+KillingQ[vec_, g_, xx_, OptionsPattern[]] := Return[Simplify[Lie[vec, g, xx, "Down"->{1,2}] === Table[0, {i, 1, Length[xx]}, {j, 1, Length[xx]}],OptionValue[Assumptions]]]
+KillingQ[vec_, g_, OptionsPattern[]] := If[If[ValueQ[Symbol["Global`" <> SymbolName[xx]]], TensorRank[Symbol["Global`" <> SymbolName[xx]]] == 1, False],
+  KillingQ[vec, g, Symbol["Global`" <> SymbolName[xx]]],
 
   Message[KillingQ::missingInput];Return[$Failed]
+]
+KillingQ[vec_, OptionsPattern[]] := If[If[ValueQ[Symbol["Global`" <> SymbolName[xx]]], TensorRank[Symbol["Global`" <> SymbolName[xx]]] == 1, False] && If[ValueQ[Symbol["Global`" <> SymbolName[g]]], TensorRank[Symbol["Global`" <> SymbolName[g]]] == 2, False],
+  KillingQ[vec, Symbol["Global`" <> SymbolName[g]], Symbol["Global`" <> SymbolName[xx]]],
+
+  Message[KillingQ::missingInput];Return[$Failed]
+]
+
+Options[Cov] = {Assumptions->None, "Up"->{}, "Down"->{}, Type->"Other"};
+Cov[vecT_, tensorT_, g_, xx_, OptionsPattern[]] := Module[
+  {r, dim, up, down, cov, tensor, vec, type, csymbols},
+
+  up = OptionValue["Up"];
+  down = OptionValue["Down"];
+  type = OptionValue[Type];
+
+  If[FormDegree[tensorT] != 0,
+    r = FormDegree[tensorT];
+    up = {};
+    down = Range[r];
+    tensor = Form2Tensor[tensorT, xx];
+    If[type == "Other", type = "Form";];,
+
+    tensor = tensorT;
+    r = TensorRank[tensor];
+    If[StringContainsQ[ToString[r], "TensorRank"], r=0];
+  ];
+
+  If[Length[up]==0 && Length[down]==0,
+    up=Range[r];
+    down={};
+  ];
+  If[Length[up]==0 && Length[down]!=0,
+    up=Complement[Range[r],down];
+  ];
+  If[Length[up]!=0 && Length[down]==0,
+    down=Complement[Range[r],up];
+  ];
+
+  If[Length[vecT] == 0,
+    (* check if vec in xx, if yes vec = {0,0,...,1,...,0} given by pos vec in xx. Otherwise error*)
+    If[vecT > Length[xx] || vecT <= 0,
+      Message[Del::vectorDim],
+
+      vec = Table[If[i == vecT, 1, 0], {i, 1, Length[xx]}];
+    ];,
+
+    If[Length[vecT] != Length[xx] || TensorRank[vecT] > 1,
+      Message[Del::vectorDim],
+      
+      vec = vecT];
+  ];
+
+  cov = TensorContract[TensorProduct[Grad[tensor, xx], vec], {r + 1, r + 2}];
+  csymbols = TensorContract[TensorProduct[Christoffel[g, xx], vec], {2, 4}];
+  
+  If[r > 0,
+    cov += TensorTranspose[TensorContract[TensorProduct[csymbols, tensor], {2, 2 + #}], Join[{#}, Complement[Range[r], {#}]]] & /@ up;
+    cov += -TensorTranspose[TensorContract[TensorProduct[csymbols, tensor], {1, 2 + #}], Join[{#}, Complement[Range[r], {#}]]] & /@ down;
+  ];
+  cov = Simplify[cov, OptionValue[Assumptions]];
+  If[type == "Form",
+    Return[Tensor2Form[cov,xx]];,
+    Return[cov];
+  ];
+]
+Cov[vecT_, tensorT_, g_, OptionsPattern[]] := If[If[ValueQ[Symbol["Global`" <> SymbolName[xx]]], TensorRank[Symbol["Global`" <> SymbolName[xx]]] == 1, False],
+  Cov[vecT, tensorT, g, Symbol["Global`" <> SymbolName[xx]]],
+
+  Message[Cov::missingInput];Return[$Failed]
+]
+Cov[vecT_, tensorT_, OptionsPattern[]] := If[If[ValueQ[Symbol["Global`" <> SymbolName[g]]], TensorRank[Symbol["Global`" <> SymbolName[g]]] == 2, False],
+  Cov[vecT, tensorT, Symbol["Global`" <> SymbolName[g]], Symbol["Global`" <> SymbolName[xx]]],
+
+  Message[Cov::missingInput];Return[$Failed]
+]
+
+Options[ConfKillingQ] = {Assumptions->None};
+ConfKillingQ[vec_, g_, xx_, OptionsPattern[]] := Return[Simplify[Lie[vec, g, xx, "Down"->{1,2}] - 2/Length[xx] Sum[Cov[i, vec, g, xx][[i]], {i, 1, Length[xx]}] g === Table[0, {i, 1, Length[xx]}, {j, 1, Length[xx]}],OptionValue[Assumptions]]]
+ConfKillingQ[vec_, g_, OptionsPattern[]] := If[If[ValueQ[Symbol["Global`" <> SymbolName[xx]]], TensorRank[Symbol["Global`" <> SymbolName[xx]]] == 1, False],
+  ConfKillingQ[vec, g, Symbol["Global`" <> SymbolName[xx]]],
+
+  Message[ConfKillingQ::missingInput];Return[$Failed]
+]
+ConfKillingQ[vec_, OptionsPattern[]] := If[If[ValueQ[Symbol["Global`" <> SymbolName[xx]]], TensorRank[Symbol["Global`" <> SymbolName[xx]]] == 1, False] && If[ValueQ[Symbol["Global`" <> SymbolName[g]]], TensorRank[Symbol["Global`" <> SymbolName[g]]] == 2, False],
+  ConfKillingQ[vec, Symbol["Global`" <> SymbolName[g]], Symbol["Global`" <> SymbolName[xx]]],
+
+  Message[ConfKillingQ::missingInput];Return[$Failed]
 ]
 
 Options[InteriorProduct] = {Assumptions->None, Type->None};
@@ -974,6 +1090,8 @@ InteriorProduct[vec_, formT_, xx_, OptionsPattern[]] :=
 ]
 
 (* TODO:
+-coord change
+-induced metric
 -Lie bracket
 -spin co
 -Conf Killing vec eq
