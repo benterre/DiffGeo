@@ -150,8 +150,9 @@ Based on the EDC360 package. The exterior algebra part of this package defines t
 > g = d[r]^2 + r^2 d[\[Theta]]^2;
 > xx = {r,\[Theta]};
 >
-> Form2Metric[g, xx] = {{1,0},{0,r^2}}
+> Form2Metric[g, xx]
 > ```
+> `{{1,0},{0,r^2}}`
 
 ### Form2Tensor
 `Form2Tensor[form, xx]`: Converts a d-form `form`, represented using the exterior derivative `d`, into its tensor components, using `xx` as a list of coordinates.
@@ -167,8 +168,9 @@ Optional Arguments:
 > form = d[x]\[Wedge]d[y];
 > xx = {x,y};
 >
-> Form2Tensor[form, xx] = {{0,1},{-1,0}}
+> Form2Tensor[form, xx]
 > ```
+> `{{0,1},{-1,0}}`
 
 ### Tensor2Form
 `Tensor2Form[tensor, xx]`: Converts a tensor `tensor` of any rank into its form representation using `xx` as a list of coordinates.
@@ -185,8 +187,9 @@ Optional Arguments:
 > tensor = {{0,1},{-1,0}};
 > xx = {w,z};
 >
-> Tensor2Form[tensor, xx] = d[w]\[Wedge]d[z]
+> Tensor2Form[tensor, xx]
 > ```
+> `d[w]\[Wedge]d[z]`
 
 ### HodgeStar
 `HodgeStar[tensor, g]`: Returns the Hodge dual of the tensor `tensor`, with respect to the metric `g`.
@@ -205,9 +208,12 @@ Optional Arguments:
 >
 > form = d[r]\[Wedge]d[\[Theta]];
 > 
-> HodgeStar[form, g, xx] = (Sqrt[Abs[r^4 Sin[\[Theta]]^2]] d[\[Phi]])/r^2
-> HodgeStar[form, g, xx, Assumptions -> {r > 0, \[Theta] > 0, \[Theta] < \[Pi]}] = d[\[Phi]] Sin[\[Theta]]
+> HodgeStar[form, g, xx]
+> HodgeStar[form, g, xx, Assumptions -> {r > 0, \[Theta] > 0, \[Theta] < \[Pi]}]
 > ```
+> `(Sqrt[Abs[r^4 Sin[\[Theta]]^2]] d[\[Phi]])/r^2`
+>
+> `d[\[Phi]] Sin[\[Theta]]`
 
 ### SelfDualQ
 `SelfDualQ[form, g, xx]`: Return `True` if `form` is self-dual wrt the metric `g` and `False` otherwise.
@@ -227,9 +233,12 @@ Optional Arguments:
 > form1 = d[x1]\[Wedge]d[x2] - d[x3]\[Wedge]d[x4];
 > form2 = d[x1]\[Wedge]d[x2] + d[x3]\[Wedge]d[x4];
 > 
-> SelfDualQ[form1, g, xx] = False
-> SelfDualQ[form2, g, xx] = True
+> SelfDualQ[form1, g, xx]
+> SelfDualQ[form2, g, xx]
 > ```
+> `False`
+>
+> `True`
 
 ### AntiSelfDualQ
 `AntiSelfDualQ[form, g, xx]`: Return `True` if `form` is anti-self-dual wrt the metric `g` and `False` otherwise.
@@ -249,9 +258,12 @@ Optional Arguments:
 > form1 = d[x1]\[Wedge]d[x2] - d[x3]\[Wedge]d[x4];
 > form2 = d[x1]\[Wedge]d[x2] + d[x3]\[Wedge]d[x4];
 > 
-> AntiSelfDualQ[form1, g, xx] = True
-> AntiSelfDualQ[form2, g, xx] = False
+> AntiSelfDualQ[form1, g, xx]
+> AntiSelfDualQ[form2, g, xx]
 > ```
+> `True`
+>
+> `False`
 
 ### Lie
 `Lie[vec, tensor, xx]`: Returns the Lie derivative of `tensor` with respect to the vector `vec` using the set of coordinates `xx`.
@@ -281,17 +293,21 @@ Optional Arguments:
 > vec = {r^2, \[Theta], 0};
 > tensor = {{r, \[Theta]}, {Sin[\[Theta]], Cos[\[Theta]]}};
 > 
-> Lie[vec, tensor] = {{r^2, \[Theta]}, {\[Theta] Cos[\[Theta]], -\[Theta] Sin[\[Theta]]}}
+> Lie[vec, tensor]
 > ```
+> `{{r^2, \[Theta]}, {\[Theta] Cos[\[Theta]], -\[Theta] Sin[\[Theta]]}}`
 
 > Example
 > ```
 > xx = {r, \[Theta], \[Phi]};
 > g = DiagonalMatrix[{1, r^2, r^2 Sin[\[Theta]]^2}];
 > 
-> Lie[1, g] = {{0, 0, 0}, {0, 2 r, 0}, {0, 0, 2 r Sin[\[Theta]]^2}}
-> Lie[3, g] = {{0, 0, 0}, {0, 0, 0}, {0, 0, 0}}
+> Lie[1, g]
+> Lie[3, g]
 > ```
+> `{{0, 0, 0}, {0, 2 r, 0}, {0, 0, 2 r Sin[\[Theta]]^2}}`
+> 
+> `{{0, 0, 0}, {0, 0, 0}, {0, 0, 0}}`
 
 ### KillingQ
 `KillingQ[vector, g, xx]`: Returns `True` if the vector is Killing with respect to the metric `g` given the set of coordinates `xx`, and `False` otherwise.
@@ -299,6 +315,8 @@ Optional Arguments:
 `KillingQ[vector, g]` will try to use a globally defined variable called `xx` as the set of coordinates and then calls `KillingQ[vector, g, xx]`.
 
 `KillingQ[vector]` will try to use a globally defined variable called `g` as the metric and then calls `KillingQ[vector, g]`.
+
+A vector field $`V=V^\mu\partial_\mu`$ is Killing if the Lie derivative of the metric along it vanishes, $`\mathcal{L}_{V}g=0`$.
 
 Optional Arguments:
   - `Assumptions->None`: Array of assumptions used in Simplify
@@ -329,17 +347,17 @@ Optional Arguments:
 > 
 > ```
 
-> Example
-> ```
-> 
-> ```
-
 ### ConfKillingQ
 `ConfKillingQ[vector, g, xx]`: Returns `True` if the vector is conformal Killing with respect to the metric `g` given the set of coordinates `xx`, and `False` otherwise.
 
 `ConfKillingQ[vector, g]` will try to use a globally defined variable called `xx` as the set of coordinates and then calls `ConfKillingQ[vector, g, xx]`.
 
 `ConfKillingQ[vector]` will try to use a globally defined variable called `g` as the metric and then calls `ConfKillingQ[vector, g]`.
+
+A vector field $`V=V^\mu\partial_\mu`$ is conformal Killing if it obeys the equation
+```math
+\mathcal{L}_V g=\frac{2}{d}\nabla_\mu V^\mu g
+```
 
 Optional Arguments:
   - `Assumptions->None`: Array of assumptions used in Simplify
