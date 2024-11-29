@@ -281,6 +281,13 @@ Optional Arguments:
   - Type->\"Other\": Used to specify the ouput format. Type->\"Form\" will output a rank r-1 form (defaults to that when using rank-r form as input)"
 InteriorProduct::dimMismatch = "Mismatch between the length of the input vector and the length of the coordinates."
 
+SpinConnection::usage = "SpinConnection[e, xx] returns the spin connection one-form with respect to the array of vielbein one-forms e and coordinate list xx.
+The vielbeins e can also be specified using a matrix with non-coordinate components first, i.e. e[[a,\[Mu]]].
+
+Optional Arguments:
+  - Assumptions->None: Array of assumptions used in Simplify"
+SpinConnection::missingInput = "Wrong vielbein input. Please provide a correct list of one-forms or vielbein matrix."
+
 (*Needs["Notation`"];*)
 
 Begin["`Private`"]
@@ -1089,11 +1096,33 @@ InteriorProduct[vec_, formT_, xx_, OptionsPattern[]] :=
   ];
 ]
 
+Options[SpinConnection] = {Assumptions->None};
+SpinConnection[e_, xx_, OptionsPattern[]] :=
+  Module[{g, einv, omega, emat},
+  If[TensorRank[e] == 1,
+    If[FormDegree[e[[1]]] != 0,
+      emat = Form2Tensor[#, xx] & /@ e;
+    ],
+
+    If[TensorRank[e] == 2,
+      emat = e;,
+
+      Message[SpinConnection::missingInput];Return[$Failed]
+    ]
+  ];
+
+  g = Simplify[Transpose[emat].emat, OptionValue[Assumptions]];
+  einv = Simplify[Inverse[emat], OptionValue[Assumptions]];
+
+  omega = Simplify[TensorContract[TensorProduct[emat, Christoffel[g, xx], einv, d[xx]], {{2, 3}, {4, 6}, {5, 8}}] + TensorContract[TensorProduct[emat, Grad[einv, xx], d[xx]], {{2, 3}, {5, 6}}], OptionValue[Assumptions]];
+  
+  Return[omega]
+]
+
 (* TODO:
 -coord change
 -induced metric
 -Lie bracket
--spin co
 -Conf Killing vec eq
 
 -gamma matrices basis
