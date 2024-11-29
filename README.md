@@ -5,6 +5,17 @@ So far, the package can be organised into two distinct parts:
  - [Standard GR-invariants](#standard-gr-invariants)
  - [Exterior Algebra](#exterior-algebra)
 
+## Future Additions
+- [x] Conformal Killing Vector
+- [x] Spin connection
+- [ ] Fix optional arguments when specifying part of the inputs. eg `Lie[vec, g, xx, "Down" -> {1, 2}]` works but `Lie[vec, g, "Down" -> {1, 2}]` confuses the option for `xx`
+- [ ] Fix https://github.com/benterre/DiffGeo/issues/1 AntiSelfDualQ returns False on array input
+- [ ] Lie Bracket
+- [ ] Vielbeins
+- [ ] Gamma matrices
+- [ ] Killing Spinors
+- [ ] Fefferman-Graham Gauge
+
 ## Standard GR-invariants
 > [!NOTE]
 > For these functions, the metric should be given as a $d\times d$ array and the list of coordinates as a $d$ array.
@@ -140,7 +151,10 @@ Based on the EDC360 package. The exterior algebra part of this package defines t
 - [AntiSelfDualQ](#antiselfdualq)
 - [Lie](#lie)
 - [KillingQ](#killingq)
+- [Cov](#cov)
+- [ConfKillingQ](#confkillingq)
 - [InteriorProduct](#interiorproduct)
+- [SpinConnection](#spinconnection)
 
 ### Form2Metric
 `Form2Metric[g,xx]`: Converts a metric, (abusively) written using squared one-forms, into its matrix representation, using the set of coordinates `xx`.
@@ -371,12 +385,24 @@ Optional Arguments:
   - `Assumptions->None`: Array of assumptions used in Simplify
   - `Type->"Other"`: Used to specify the ouput format. `Type->"Form"` will output a rank r-1 form (defaults to that when using rank-r form as input)
 
-# Future Additions
-- [ ] Fix optional arguments when specifying part of the inputs. eg `Lie[vec, g, xx, "Down" -> {1, 2}]` works but `Lie[vec, g, "Down" -> {1, 2}]` confuses the option for `xx`
-- [ ] Lie Bracket
-- [ ] Vielbeins
-- [ ] Spin connection
-- [ ] Conformal Killing Vector
-- [ ] Gamma matrices
-- [ ] Killing Spinors
-- [ ] Fefferman-Graham Gauge
+
+### SpinConnection
+`SpinConnection[e, xx]`: Returns the spin connection one-form $`\omega^{ab}`$ with respect to the array of vielbein one-forms `e` and coordinate list `xx`.
+The vielbeins `e` can also be specified using a matrix with non-coordinate components first, i.e. $`e^a{}_\mu`$.
+
+Its components are defined via
+```math
+\omega_\mu{}^{ab}=e^a{}_\nu(\partial_\mu e^{\nu b}+\Gamma^{\nu}{}_{\mu\rho}e^{\rho b})
+```
+
+Optional Arguments:
+  - `Assumptions->None`: Array of assumptions used in Simplify
+
+> Example
+> ```
+> xx = {\[Theta], \[CurlyPhi], \[Tau], t};
+> e = {Sin[\[CurlyPhi] + \[Tau]] d[\[Theta]] + Cos[\[Theta]] Sin[\[Theta]] Cos[\[CurlyPhi] + \[Tau]] d[\[CurlyPhi]] \[Minus] Cos[\[Theta]] Sin[\[Theta]] Cos[\[CurlyPhi] + \[Tau]] d[\[Tau]], -Cos[\[CurlyPhi] + \[Tau]] d[\[Theta]] + Cos[\[Theta]] Sin[\[Theta]] Sin[\[CurlyPhi] + \[Tau]] d[\[CurlyPhi]] - Cos[\[Theta]] Sin[\[Theta]] Sin[\[CurlyPhi] + \[Tau]] d[\[Tau]], Sin[\[Theta]]^2 d[\[CurlyPhi]] + Cos[\[Theta]]^2 d[\[Tau]], \[Beta] d[t]};
+>
+> SpinConnection[e, xx]
+> ```
+> `{{0, Cos[\[Theta]]^2 d[\[Tau]] + d[\[CurlyPhi]] Sin[\[Theta]]^2, Cos[\[Tau] + \[CurlyPhi]] d[\[Theta]] + Cos[\[Theta]] (d[\[Tau]] - d[\[CurlyPhi]]) Sin[\[Theta]] Sin[\[Tau] + \[CurlyPhi]], 0}, {-Cos[\[Theta]]^2 d[\[Tau]] - d[\[CurlyPhi]] Sin[\[Theta]]^2, 0, -Cos[\[Theta]] Cos[\[Tau] + \[CurlyPhi]] d[\[Tau]] Sin[\[Theta]] \+ Cos[\[Theta]] Cos[\[Tau] + \[CurlyPhi]] d[\[CurlyPhi]] Sin[\[Theta]] + d[\[Theta]] Sin[\[Tau] + \[CurlyPhi]], 0}, {-Cos[\[Tau] + \[CurlyPhi]] d[\[Theta]] + Cos[\[Theta]] (-d[\[Tau]] + d[\[CurlyPhi]]) Sin[\[Theta]] Sin[\[Tau] + \[CurlyPhi]], Cos[\[Theta]] Cos[\[Tau] + \[CurlyPhi]] d[\[Tau]] Sin[\[Theta]] - 1/2 Cos[\[Tau] + \[CurlyPhi]] d[\[CurlyPhi]] Sin[2 \[Theta]] - d[\[Theta]] Sin[\[Tau] + \[CurlyPhi]], 0, 0}, {0, 0, 0, 0}}`
