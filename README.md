@@ -10,7 +10,7 @@ So far, the package can be organised into two distinct parts:
 - [x] Spin connection
 - [ ] Fix optional arguments when specifying part of the inputs. eg `Lie[vec, g, xx, "Down" -> {1, 2}]` works but `Lie[vec, g, "Down" -> {1, 2}]` confuses the option for `xx`
 - [ ] Fix https://github.com/benterre/DiffGeo/issues/1 AntiSelfDualQ returns False on array input
-- [ ] Allow Form2Tensor to convert tensor-valued n-forms
+- [x] Allow Form2Tensor to convert tensor-valued n-forms
 - [ ] Lie Bracket
 - [ ] Vielbeins
 - [ ] Allow Form2Tensor to convert directly to non-coordinate basis
