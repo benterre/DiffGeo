@@ -208,10 +208,14 @@ AntiSelfDualQ::missingInput = "Cannot locate a globally defined array of coordin
 Form2Tensor::usage = "Form2Tensor[form, xx]: Converts a d-form, represented using d[x]\[Wedge]d[y]... into its tensor components. 'xx' is a list of coordinates.
 Form2Tensor[form] will try to use a globally defined variable called 'xx' as the set of coordinates and then calls Form2Tensor[form, xx].
 
+Form2Tensor[tensor-form, xx]: Converts a tensor of d-forms into its tensor components. The spacetime components are appended after the original tensor's components.
+
 Optional Arguments:
   - Assumptions->None: Array of assumptions used in Simplify
   - \"Type\"->String. When equal to 'SymmetrizedArray' returns the tensor as a fully anti-symmetric SymmetrizedArray. When set to 'Normal' returns a standard array. (defaults to 'Normal')"
 Form2Tensor::missingInput = "Cannot locate a globally defined array of coordinates, xx. Either provide it as an input or define one globally."
+Form2Tensor::inconsistentForms = "Found forms of different degrees. Please provide homogenous forms only."
+Form2Tensor::inconsistentDegree = "Cannot force a degree to a non-zero tensor of forms."
 
 Tensor2Form::usage = "Tensor2Form[tensor, xx]: Converts a tensor of any dimension into its form representation, using the d[] function. xx is a list of coordinates.
 Tensor2Form[tensor] will try to use a globally defined variable called 'xx' as the set of coordinates and then calls Tensor2Form[tensor, xx].
@@ -814,41 +818,86 @@ AntiSelfDualQ[formT_, OptionsPattern[]] := If[If[ValueQ[Symbol["Global`" <> Symb
   Message[AntiSelfDualQ::missingInput];Return[$Failed]
 ]
 
-Options[Form2Tensor] = {Type->"Normal", Assumptions->None};
-Form2Tensor[form_, xx_, OptionsPattern[]] := Module[
- {n = FormDegree[form], dim = Length[xx], terms, tensor, wedgeTerm, 
+protoForm2Tensor[form_, xx_, assume_] :=Module[
+  {n = FormDegree[form], dim = Length[xx], terms, tensor, wedgeTerm, 
   coefficient, permutedIndices, antisymtensor},
+
   terms = If[Head[Expand@form] === Plus, List @@ Expand@form, {Expand@form}];
   tensor = ConstantArray[0, Array[dim &, n]];
 
   If[n==0, Return[form],
-  Do[
-  If[n==1,
-    wedgeTerm = Select[terms[[i]], MatchQ[#, _d] &];,
-    wedgeTerm = Select[terms[[i]], MatchQ[#, _Wedge] &];];
-  
-  If[ToString[wedgeTerm] == "Wedge[]" || ToString[wedgeTerm] == "d[]" || ToString[wedgeTerm] == "1",
-   wedgeTerm = terms[[i]];
-   coefficient = 1;
-   ,
-   coefficient = Coefficient[terms[[i]], wedgeTerm];
-   ];
-  
-  permutedIndices = 
-  Position[xx, #] & /@ (List @@ wedgeTerm /. 
-     HoldPattern[d[var_]] :> var);
-  If[MemberQ[permutedIndices, {}], coefficient = 0;];
-  permutedIndices = Flatten[permutedIndices];
-  
-  tensor[[Sequence @@ permutedIndices]] += coefficient;
-  , {i, Length[terms]}
+    Do[
+      If[n==1,
+        wedgeTerm = Select[terms[[i]], MatchQ[#, _d] &];,
+        wedgeTerm = Select[terms[[i]], MatchQ[#, _Wedge] &];
+      ];
+      
+      If[ToString[wedgeTerm] == "Wedge[]" || ToString[wedgeTerm] == "d[]" || ToString[wedgeTerm] == "1",
+        wedgeTerm = terms[[i]];
+        coefficient = 1;
+        ,
+        coefficient = Coefficient[terms[[i]], wedgeTerm];
+      ];
+      
+      permutedIndices = Position[xx, #] & /@ (List @@ wedgeTerm /. HoldPattern[d[var_]] :> var);
+      If[MemberQ[permutedIndices, {}], coefficient = 0;];
+      permutedIndices = Flatten[permutedIndices];
+      
+      tensor[[Sequence @@ permutedIndices]] += coefficient;
+    , {i, Length[terms]}];
   ];
- antisymtensor = Simplify[n! SymmetrizedArray[tensor, Automatic, 
-    Antisymmetric[All]],OptionValue[Assumptions]];
+  antisymtensor = Simplify[n! SymmetrizedArray[tensor, Automatic, Antisymmetric[All]], assume];
+  Return[antisymtensor];
+];
+Options[Form2Tensor] = {Type->"Normal", Assumptions->None, ForceDegree->0};
+Form2Tensor[form_, xx_, OptionsPattern[]] := Module[
+ {n = FormDegree[form], dim = Length[xx], terms, shape, ii, indices, tosum, antisymtensor},
+  terms = If[Head[Expand@form] === Plus, List @@ Expand@form, {Expand@form}];
+
+  (* If provided with a Tensor of forms, loop through elements and convert each to tensor *)
+  If[Head[Expand@form] === List,
+    shape = Dimensions[form];
+    n = 0;
+
+    antisymtensor = ConstantArray[0, shape];
+
+    indices = Table[Range[dims[[i]]], {i, Length[dims]}];
+    indices = Table[ii[aa], {aa, 1, Length[shape]}];
+    tosum = Table[{ii[a], 1, shape[[a]]}, {a, 1, Length[shape]}];
+    Do[
+      (* Check for inconsistent form degrees *)
+      If[FormDegree[form[[Sequence @@ indices]]] > n && n > 0,
+        Message[Form2Tensor::inconsistentForms];Return[$Failed];,
+
+        If[FormDegree[form[[Sequence @@ indices]]] > 0,
+          n = FormDegree[form[[Sequence @@ indices]]];
+        ];
+      ];
+      
+      antisymtensor[[Sequence @@ indices]] = 
+      protoForm2Tensor[form[[Sequence @@ indices]], xx, OptionValue[Assumptions]], 
+      Evaluate[Sequence @@ tosum]
+    ];
+
+    (* Loop back through tensor and convert 0 elements to proper tensor shape *)
+    If[n>0,
+      If[OptionValue[ForceDegree] > 0, Message[Form2Tensor::inconsistentDegree];Return[$Failed];];
+      antisymtensor = Replace[antisymtensor, 0 :> ConstantArray[0, Table[dim, n]], {2}];
+    ];
+    (* If tensor is null, and ForceDegree is specified, output requested shape *)
+    If[OptionValue[ForceDegree] > 0,
+      antisymtensor = Replace[antisymtensor, 0 :> ConstantArray[0, Table[dim, OptionValue[Degree]]], {2}];
+    ];
+
+    ,
+    antisymtensor = protoForm2Tensor[form, xx, OptionValue[Assumptions]];
+  ];
+
+  (* Condition output based on user request *)
   If[OptionValue[Type] == "SymmetrizedArray", Return[antisymtensor];];
   If[OptionValue[Type] == "SparseArray", Return[SparseArray[antisymtensor]];,
-    Return[Normal[antisymtensor]];];
-  ]
+    Return[Normal[antisymtensor]];
+  ];
 ];
 Form2Tensor[form_, OptionsPattern[]] := If[If[ValueQ[Symbol["Global`" <> SymbolName[xx]]], TensorRank[Symbol["Global`" <> SymbolName[xx]]] == 1, False],
   Form2Tensor[form, Symbol["Global`" <> SymbolName[xx]]],
