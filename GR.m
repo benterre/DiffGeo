@@ -300,9 +300,10 @@ Begin["`Private`"]
 Off[General::"spell", General::"spell1", Remove::"rmnsm", 
   UpSet::"write"];
 
-Unprotect["Global`*"]; ClearAll["Global`*"]; Remove["Global`*"]; \
+(*Unprotect["Global`*"]; ClearAll["Global`*"]; Remove["Global`*"]; \
 Unprotect[In, Out]; Clear[In, Out]; Protect[In, Out]; $Line = 0; \
-$RecursionLimit = 256; $IterationLimit = 4096;
+$RecursionLimit = 256; $IterationLimit = 4096;*)
+ClearAll[Forms,AllScalForms,AllDifForms,AllSymbols,FormVars,HeadList,ScalHeadList,nodHeads,zeroQ,Bar,FormDegree,DeclareForms,NoDif,BasicScalFormQ,ScalFormQ,d,newSer$,Wedge,simpRules,coll,reWrite,FreeALLQ,bestFacRul,varFacRul,minFacRul];
 
 Forms[i_] := {}; AllScalForms = {}; AllDifForms = {}; AllSymbols = \
 {}; FormVars = {_Wedge, _d}; HeadList = {}; ScalHeadList = {}; \
@@ -859,38 +860,47 @@ Form2Tensor[form_, xx_, OptionsPattern[]] := Module[
     shape = Dimensions[form];
     n = 0;
 
-    antisymtensor = ConstantArray[0, shape];
+    If[form === ConstantArray[0, shape],
+      antisymtensor = ConstantArray[0,Join[shape, Table[dim, OptionValue[ForceDegree]]]];
+      ,
 
-    indices = Table[Range[dims[[i]]], {i, Length[dims]}];
-    indices = Table[ii[aa], {aa, 1, Length[shape]}];
-    tosum = Table[{ii[a], 1, shape[[a]]}, {a, 1, Length[shape]}];
-    Do[
-      (* Check for inconsistent form degrees *)
-      If[FormDegree[form[[Sequence @@ indices]]] > n && n > 0,
-        Message[Form2Tensor::inconsistentForms];Return[$Failed];,
+      antisymtensor = ConstantArray[0, shape];
 
-        If[FormDegree[form[[Sequence @@ indices]]] > 0,
-          n = FormDegree[form[[Sequence @@ indices]]];
+      indices = Table[Range[dims[[i]]], {i, Length[dims]}];
+      indices = Table[ii[aa], {aa, 1, Length[shape]}];
+      tosum = Table[{ii[a], 1, shape[[a]]}, {a, 1, Length[shape]}];
+      Do[
+        (* Check for inconsistent form degrees *)
+        If[FormDegree[form[[Sequence @@ indices]]] > n && n > 0,
+          Message[Form2Tensor::inconsistentForms];Return[$Failed];,
+
+          If[FormDegree[form[[Sequence @@ indices]]] > 0,
+            n = FormDegree[form[[Sequence @@ indices]]];
+          ];
         ];
+        
+        antisymtensor[[Sequence @@ indices]] = 
+        protoForm2Tensor[form[[Sequence @@ indices]], xx, OptionValue[Assumptions]], 
+        Evaluate[Sequence @@ tosum]
       ];
-      
-      antisymtensor[[Sequence @@ indices]] = 
-      protoForm2Tensor[form[[Sequence @@ indices]], xx, OptionValue[Assumptions]], 
-      Evaluate[Sequence @@ tosum]
-    ];
 
-    (* Loop back through tensor and convert 0 elements to proper tensor shape *)
-    If[n>0,
-      If[OptionValue[ForceDegree] > 0, Message[Form2Tensor::inconsistentDegree];Return[$Failed];];
-      antisymtensor = Replace[antisymtensor, 0 :> ConstantArray[0, Table[dim, n]], {2}];
+      (* Loop back through tensor and convert 0 elements to proper tensor shape *)
+      If[n > 0,
+        If[OptionValue[ForceDegree] > 0 && OptionValue[ForceDegree] != n, Message[Form2Tensor::inconsistentDegree];Return[$Failed];];
+        antisymtensor = Replace[antisymtensor, 0 :> ConstantArray[0, Table[dim, n]], {2}];
+      ];
+      (* If tensor is null, and ForceDegree is specified, output requested shape *)
+      If[n == 0 && OptionValue[ForceDegree] > 0,
+        antisymtensor = Replace[antisymtensor, 0 :> ConstantArray[0, Table[dim, OptionValue[ForceDegree]]], {2}];
+      ];
     ];
-    (* If tensor is null, and ForceDegree is specified, output requested shape *)
-    If[OptionValue[ForceDegree] > 0,
-      antisymtensor = Replace[antisymtensor, 0 :> ConstantArray[0, Table[dim, OptionValue[Degree]]], {2}];
-    ];
-
     ,
-    antisymtensor = protoForm2Tensor[form, xx, OptionValue[Assumptions]];
+    If[OptionValue[ForceDegree] > 0 && form != 0, Message[Form2Tensor::inconsistentDegree];Return[$Failed];];
+    If[OptionValue[ForceDegree] > 0 && form == 0,
+      antisymtensor = ConstantArray[0,Table[dim, OptionValue[ForceDegree]]];
+      ,
+      antisymtensor = protoForm2Tensor[form, xx, OptionValue[Assumptions]];
+    ];
   ];
 
   (* Condition output based on user request *)
