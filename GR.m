@@ -187,6 +187,16 @@ Optional Arguments:
 HodgeStar::missingInput = "Missing required coordinates array xx or metric g when converting from form to tensor.
 Common usage HodgeStar[form, g, xx]."
 
+cod::usage = "cod[form, g, xx]: returns the codifferential of the form, given a metric g and coordinates xx.
+
+Optional Arguments:
+ - Assumptions->List. Used in all Simplify[] calls."
+
+LaplaceBeltrami::usage = "LaplaceBeltrami[form, g, xx]: returns the LaplaceBeltrami of the form, given a metric g and coordinates xx.
+
+Optional Arguments:
+ - Assumptions->List. Used in all Simplify[] calls."
+
 SelfDualQ::usage = "SelfDualQ[form, metric, coords]: return true if form is self-dual wrt the metric and false otherwise.
 Accepts rank-r tensor and r-form representation for the input form. The former doesn't require coords to be specified.
 
@@ -729,60 +739,58 @@ Metric[str_, dim_] := Module[{gform, xx},
 ]
 
 Options[HodgeStar] = {Assumptions->None, Type->None};
-HodgeStar[formT_, gT_, xx_, OptionsPattern[]] := 
- Module[{tensor, g, m, dim, ginv, dualRules = {}, dual, sqrtDetg, i, pos, val, ind, compl, sign, type = OptionValue[Type]},
+HodgeStar[formT_, g_, xx_, OptionsPattern[]] := 
+ Module[{tensor, m, dim=Length[xx], ginv, dualRules = {}, dual, sqrtDetg, i, pos, val, ind, compl, sign, type = If[OptionValue[Type] == None, "Form", OptionValue[Type]]},
 
   If[FormDegree[formT] != 0,
     tensor = Form2Tensor[formT,xx,Type->"SymmetrizedArray"];,
     tensor = SymmetrizedArray[formT,Automatic, Antisymmetric[All]];
   ];
-  If[FormDegree[gT] != 0,
-    g = SparseArray[Form2Metric[gT,xx]];,
-    g = SparseArray[gT];
-  ];
-
-  If[type == None, type = "Form"];
   
   m = TensorRank[tensor];
   If[StringContainsQ[ToString[m], "TensorRank"], m=0]; (* TensorRank gets confused if you provide a rank 0 tensor with a variable *)
-  dim = Dimensions[g][[1]];
   ginv = SymmetrizedArray[Simplify[Inverse[g],OptionValue[Assumptions]], Automatic, Symmetric[All]];
   sqrtDetg = Simplify[Sqrt[Abs[Det[g]]],OptionValue[Assumptions]];
 
   If[m == 0,
-    dual = Simplify[tensor * sqrtDetg, OptionValue[Assumptions]] * Wedge @@ d[xx[[#]] & /@ Range[dim]];
-    If[type == "Form", 
-      Return[dual];,
-      Return[Form2Tensor[dual,xx]];
-    ];,
+    (* Simple code when dealing with 0-forms *)
+    dual = Simplify[Sign[Det[g]] * tensor * sqrtDetg, OptionValue[Assumptions]] * Wedge @@ d[xx[[#]] & /@ Range[dim]];
+    ,
 
-    (* Bring up all indices for the input form, using the inverse metric *)
-    tensorUp = 
-    Simplify[
-    SymmetrizedArray[
-      TensorContract[
-        Inactive[TensorProduct][
-        Sequence @@ Join[{tensor}, Table[ginv, m]]], 
-        Table[{i, m + 2 i - 1}, {i, 1, m}]] // Activate, Automatic, 
-      Antisymmetric[All]], OptionValue[Assumptions]];
+    If[m == dim,
+      (* Simple code when dealing with top-forms *)
+      val = tensor[[Sequence @@ Table[i, {i, dim}]]];
+      dual = Simplify[1/sqrtDetg * val, OptionValue[Assumptions]];
+      ,
+      (* Bring up all indices for the input form, using the inverse metric *)
+      tensorUp = 
+      Simplify[
+      SymmetrizedArray[
+        TensorContract[
+          Inactive[TensorProduct][
+          Sequence @@ Join[{tensor}, Table[ginv, m]]], 
+          Table[{i, m + 2 i - 1}, {i, 1, m}]] // Activate, Automatic, 
+        Antisymmetric[All]], OptionValue[Assumptions]];
 
-    (* Add unique elements of tensorUp to the dual tensor *)
-    tensorUpRules = Most[ArrayRules[tensorUp]];
-    tensorUpIndices = DeleteDuplicates[Sort[#] & /@ tensorUpRules[[All, 1]]];
-    For[i = 1, i <= Length[tensorUpIndices], i++,
-      pos = Position[tensorUpRules[[All, 1]], tensorUpIndices[[i]]][[1, 1]];
-      val = tensorUpRules[[pos, 2]];
-      ind = tensorUpRules[[pos, 1]];
-      compl = Complement[Range[dim], ind];
-      sign = Signature[Join[ind, compl]];
-      AppendTo[dualRules, compl -> sign val];
+      (* Add unique elements of tensorUp to the dual tensor *)
+      tensorUpRules = Most[ArrayRules[tensorUp]];
+      tensorUpIndices = DeleteDuplicates[Sort[#] & /@ tensorUpRules[[All, 1]]];
+      For[i = 1, i <= Length[tensorUpIndices], i++,
+        pos = Position[tensorUpRules[[All, 1]], tensorUpIndices[[i]]][[1, 1]];
+        val = tensorUpRules[[pos, 2]];
+        ind = tensorUpRules[[pos, 1]];
+        compl = Complement[Range[dim], ind];
+        sign = Signature[Join[ind, compl]];
+        AppendTo[dualRules, compl -> sign val];
+      ];
+      dual = Simplify[sqrtDetg * SparseArray[dualRules, Table[dim, dim - m]], OptionValue[Assumptions]];
+      dual = SymmetrizedArray[(dim - m)! * dual, Automatic, Antisymmetric[All]];
+      dual = Tensor2Form[dual, xx];
     ];
-    dual = Simplify[sqrtDetg * SparseArray[dualRules, Table[dim, dim - m]], OptionValue[Assumptions]];
-    dual = SymmetrizedArray[(dim - m)! * dual, Automatic, Antisymmetric[All]];
-    If[type == "Form", 
-      Return[Tensor2Form[dual, xx]];,
-      Return[dual];
-    ];
+  ];
+  If[type == "Form", 
+    Return[dual];,
+    Return[Form2Tensor[dual,xx]];
   ];
 ]
 HodgeStar[formT_, gT_, OptionsPattern[]] := If[FormDegree[formT] != 0 || FormDegree[gT] != 0 || OptionValue[Type] == "Form",
@@ -802,6 +810,14 @@ Star[form_, g_, xx_] := HodgeStar[form, g, xx];
 InfixNotation[ParsedBoxWrapper[
   SubsuperscriptBox["\[Star]", "xx_", "g_"]], 
   Star];*)
+
+Options[cod] = {Assumptions->None, Type->None};
+cod[form_, g_, xx_, OptionsPattern[]] := Module[{dim = Length[xx], k = FormDegree[form]},
+  Return[Simplify[(-1)^(dim*(k+1)+1)*Sign[Det[g]]*HodgeStar[d[HodgeStar[form,g,xx,Assumptions->OptionValue[Assumptions]]],g,xx,Assumptions->OptionValue[Assumptions]], OptionValue[Assumptions]]];
+]
+
+Options[LaplaceBeltrami] = {Assumptions->None, Type->None};
+LaplaceBeltrami[form_, g_, xx_, OptionsPattern[]] := Return[Simplify[d[cod[form,g,xx,Assumptions->OptionValue[Assumptions]]]+cod[d[form],g,xx,Assumptions->OptionValue[Assumptions]], OptionValue[Assumptions]]];
 
 Options[SelfDualQ] = {Assumptions->None};
 SelfDualQ[formT_, gT_, xx_, OptionsPattern[]] := Simplify[formT-HodgeStar[formT,gT,xx],OptionValue[Assumptions]]===0;
