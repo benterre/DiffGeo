@@ -12,6 +12,8 @@ So far, the package can be organised into two distinct parts:
 - [ ] Fix https://github.com/benterre/DiffGeo/issues/1 AntiSelfDualQ returns False on array input
 - [x] Allow Form2Tensor to convert tensor-valued n-forms
 - [ ] Lie Bracket
+- [x] Codifferential of forms
+- [x] Laplace-Beltrami Operator
 - [ ] Vielbeins
 - [ ] Allow Form2Tensor to convert directly to non-coordinate basis
 - [ ] Gamma matrices
@@ -149,6 +151,8 @@ Based on the EDC360 package. The exterior algebra part of this package defines t
 - [Form2Tensor](#form2tensor)
 - [Tensor2Form](#tensor2form)
 - [HodgeStar](#hodgestar)
+- [cod](#cod)
+- [LaplaceBeltrami](#laplacebeltrami)
 - [SelfDualQ](#selfdualq)
 - [AntiSelfDualQ](#antiselfdualq)
 - [Lie](#lie)
@@ -230,6 +234,31 @@ Optional Arguments:
 > `(Sqrt[Abs[r^4 Sin[\[Theta]]^2]] d[\[Phi]])/r^2`
 >
 > `d[\[Phi]] Sin[\[Theta]]`
+
+### cod
+`cod[form, g, xx]`: Returns the codifferential of the `form`, given a metric `g` and coordinates `xx`.
+
+If $`\omega`$ is a $`k`$-form on a $`d`$-dimensional manifold with metric signature $`s`$, then its codifferential is calculated using
+
+```math
+d^\dagger\omega = (-1)^{d(k+1)+1}s\star d\star\omega
+```
+
+Optional Arguments:
+ - `Assumptions->None`: Array of assumptions used in Simplify
+
+
+### LaplaceBeltrami
+`LaplaceBeltrami[form, g, xx]`: Returns the Laplace-Beltrami operator acted on the `form`, given a metric `g` and coordinates `xx`.
+
+If $`\omega`$ is a $`k`$-form on a manifold with metric $`g`$, then Laplace-Beltrami operator is defined as
+
+```math
+\Delta\omega = (d^\dagger d + d d^\dagger)\omega = (d+d^\dagger)^2\omega
+```
+
+Optional Arguments:
+ - `Assumptions->None`: Array of assumptions used in Simplify
 
 ### SelfDualQ
 `SelfDualQ[form, g, xx]`: Return `True` if `form` is self-dual wrt the metric `g` and `False` otherwise.
