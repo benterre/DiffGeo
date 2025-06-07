@@ -1,0 +1,34 @@
+# This CITATION.cff file was generated with cffinit.
+# Visit https://bit.ly/cffinit to generate yours today!
+
+cff-version: 1.2.0
+title: DiffGeo
+message: >-
+  If you use this software, please cite it using the
+  metadata from this file.
+type: software
+authors:
+  - given-names: Benjamin
+    family-names: Suzzoni
+    email: b.suzzoni@soton.ac.uk
+    affiliation: University of Southampton
+    orcid: 'https://orcid.org/0000-0002-3941-0256'
+repository-code: 'https://github.com/benterre/DiffGeo'
+abstract: >-
+  A Mathematica package to handle everything in differential
+  geometry. From calculating curvature invariants to Hodge
+  star operations on forms, this package can do it all!
+  (That's the aim at least)
+keywords:
+  - Differential Geometry
+  - Differential Forms
+  - Hodge Star
+  - Hodge Dual
+  - Exterior Derivative
+  - Mathematica
+  - Package
+  - Curvature Invariants
+license: MIT
+commit: 7cc13b096485524694ba5972ac74aa34307bca43
+version: 0.0.1
+date-released: '2025-06-07'
